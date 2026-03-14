@@ -1,73 +1,140 @@
-# React + TypeScript + Vite
+# SMC Radar - Smart Money Concepts Trading Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A real-time trading dashboard that visualizes Smart Money Concepts (SMC) for XAUUSD (Gold) using candlestick charts with automated signal detection.
 
-Currently, two official plugins are available:
+## What is Smart Money Concepts (SMC)?
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**SMC** is a trading methodology based on institutional order flow analysis:
 
-## React Compiler
+- **FVG (Fair Value Gap)**: Price inefficiency where candles leave gaps between highs/lows, creating areas where price often retests
+- **ITH (Intermediate Term High)**: A swing high that forms within a bearish FVG, indicating potential resistance
+- **ITL (Intermediate Term Low)**: A swing low that forms within a bullish FVG, indicating potential support
+- **Sweep**: When price breaks through an ITH/ITL level, triggering a potential reversal signal
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Technology Stack
 
-## Expanding the ESLint configuration
+**Frontend:**
+- React 19 with TypeScript
+- Vite for build tooling
+- Lightweight Charts for visualization
+- Tailwind CSS for styling
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+**Backend:**
+- Node.js with TypeScript
+- Express.js server
+- Yahoo Finance API for market data
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Features
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Real-time gold (XAUUSD) price data visualization
+- Automatic FVG, ITH, ITL, and Sweep detection
+- London/NY session time filtering
+- Multiple timeframe support (1m to 4h)
+- Adjustable swing length parameters
+- Signal logging and alerts
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [npm](https://www.npmjs.com/) (comes with Node.js)
+
+## Running Locally
+
+### 1. Install Dependencies
+
+**Frontend (root directory):**
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Backend (backend directory):**
+```bash
+cd backend
+npm install
 ```
+
+### 2. Start Backend Server
+
+In the `backend` directory:
+```bash
+npm run dev
+```
+
+The backend will start on `http://localhost:3001`
+
+### 3. Start Frontend Dev Server
+
+In the root directory (in a separate terminal):
+```bash
+npm run dev
+```
+
+The frontend will start on `http://localhost:5173`
+
+### 4. Access the Application
+
+Open your browser and navigate to `http://localhost:5173`
+
+## Configuration
+
+### Environment Variables (Optional)
+
+Create a `.env` file in the root or backend directory:
+
+```env
+PORT=3001
+VITE_API_URL=http://localhost:3001
+```
+
+## Project Structure
+
+```
+ITT-project/
+├── backend/
+│   ├── server.ts          # Express server with API endpoints
+│   ├── smc.ts             # SMC calculation logic
+│   └── package.json
+├── src/
+│   ├── App.tsx            # Main application component
+│   ├── TradingChart.tsx   # Chart visualization component
+│   └── index.css          # Global styles
+├── package.json
+├── vite.config.ts
+└── README.md
+```
+
+## Available Scripts
+
+### Frontend
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm run preview` - Preview production build
+
+### Backend
+- `npm run dev` - Start development server with hot reload
+- `npm run start` - Start production server
+
+## Signal Definitions
+
+| Signal | Type | Meaning |
+|--------|------|---------|
+| ITH | Red Arrow Down | Intermediate Term High - Potential resistance |
+| ITL | Green Arrow Up | Intermediate Term Low - Potential support |
+| SWEEP | Yellow Circle | Price broke through ITH/ITL - Reversal signal |
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## Support
+
+For issues or questions, please open an issue in the repository.
