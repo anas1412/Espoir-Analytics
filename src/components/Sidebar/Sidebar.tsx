@@ -43,8 +43,8 @@ export function Sidebar(props: SidebarProps) {
             <TrendingUp size={18} className="text-zinc-100" />
           </div>
           <div>
-            <h1 className="font-bold text-xl tracking-tight text-white leading-none">ITT</h1>
-            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-1.5">Analytics</p>
+            <h1 className="font-bold text-xl tracking-tight text-white leading-none">ITT Analytics</h1>
+            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-1.5">Trading Dashboard</p>
           </div>
         </div>
 
