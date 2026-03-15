@@ -9,6 +9,8 @@ interface ControlsProps {
   setSweepStart: (val: string) => void;
   sweepEnd: string;
   setSweepEnd: (val: string) => void;
+  filterSweepsByWindow: boolean;
+  setFilterSweepsByWindow: (val: boolean) => void;
   showMtf: boolean;
   setShowMtf: (val: boolean) => void;
   strictMode: boolean;
@@ -22,6 +24,7 @@ export function Controls({
   lookbackDays, setLookbackDays,
   sweepStart, setSweepStart,
   sweepEnd, setSweepEnd,
+  filterSweepsByWindow, setFilterSweepsByWindow,
   showMtf, setShowMtf,
   strictMode, setStrictMode,
   minFvgRatio, setMinFvgRatio
@@ -77,24 +80,39 @@ export function Controls({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1">Sweep Start</label>
+        <div className="space-y-3 pt-2 border-t border-slate-800/50">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1 cursor-pointer select-none" htmlFor="filter-sweeps-toggle">
+              Enforce Sweep Window
+            </label>
             <input 
-              type="time" 
-              value={sweepStart}
-              onChange={(e) => setSweepStart(e.target.value)}
-              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-indigo-500/50 transition-all font-mono"
+              id="filter-sweeps-toggle"
+              type="checkbox"
+              checked={filterSweepsByWindow}
+              onChange={(e) => setFilterSweepsByWindow(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-700/50 bg-slate-800/50 text-indigo-600 focus:ring-indigo-500/50 transition-all cursor-pointer"
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1">Sweep End</label>
-            <input 
-              type="time" 
-              value={sweepEnd}
-              onChange={(e) => setSweepEnd(e.target.value)}
-              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-indigo-500/50 transition-all font-mono"
-            />
+
+          <div className={`grid grid-cols-2 gap-3 transition-opacity ${!filterSweepsByWindow ? 'opacity-40 pointer-events-none' : ''}`}>
+            <div className="space-y-2">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1">Sweep Start</label>
+              <input 
+                type="time" 
+                value={sweepStart}
+                onChange={(e) => setSweepStart(e.target.value)}
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-indigo-500/50 transition-all font-mono"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1">Sweep End</label>
+              <input 
+                type="time" 
+                value={sweepEnd}
+                onChange={(e) => setSweepEnd(e.target.value)}
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-indigo-500/50 transition-all font-mono"
+              />
+            </div>
           </div>
         </div>
 

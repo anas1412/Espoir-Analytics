@@ -12,6 +12,7 @@ export function TradingChart() {
   const [lookbackDays, setLookbackDays] = useState(3);
   const [sweepStart, setSweepStart] = useState('07:00');
   const [sweepEnd, setSweepEnd] = useState('22:00');
+  const [filterSweepsByWindow, setFilterSweepsByWindow] = useState(true);
   const [showMtf, setShowMtf] = useState(false);
   const [strictMode, setStrictMode] = useState(true);
   const [minFvgRatio, setMinFvgRatio] = useState(0.1);
@@ -30,6 +31,7 @@ export function TradingChart() {
         lookbackDays={lookbackDays} setLookbackDays={setLookbackDays}
         sweepStart={sweepStart} setSweepStart={setSweepStart}
         sweepEnd={sweepEnd} setSweepEnd={setSweepEnd}
+        filterSweepsByWindow={filterSweepsByWindow} setFilterSweepsByWindow={setFilterSweepsByWindow}
         showMtf={showMtf} setShowMtf={setShowMtf}
         strictMode={strictMode} setStrictMode={setStrictMode}
         minFvgRatio={minFvgRatio} setMinFvgRatio={setMinFvgRatio}
@@ -53,6 +55,7 @@ export function TradingChart() {
             lookbackDays={lookbackDays}
             sweepStart={sweepStart}
             sweepEnd={sweepEnd}
+            filterSweepsByWindow={filterSweepsByWindow}
             onAlertsUpdate={handleAlertsUpdate}
           />
         </div>

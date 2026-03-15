@@ -8,10 +8,11 @@ interface ChartAreaProps {
   lookbackDays: number;
   sweepStart: string;
   sweepEnd: string;
+  filterSweepsByWindow: boolean;
   onAlertsUpdate: (alerts: MarketAlert[]) => void;
 }
 
-export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, onAlertsUpdate }: ChartAreaProps) {
+export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate }: ChartAreaProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -126,7 +127,7 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, onAlertsUp
       const inWindow = isTimeInWindow(matchingCandle.time as number, sweepStart, sweepEnd);
       const withinLookback = (matchingCandle.time as number) >= lookbackTimestamp;
       
-      const shouldShow = withinLookback && inWindow;
+      const shouldShow = withinLookback && (!filterSweepsByWindow || inWindow);
 
       if (shouldShow) {
         const tfPrefix = sweep.timeframe ? `[${sweep.timeframe}] ` : '';
@@ -172,7 +173,7 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, onAlertsUp
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [data, lookbackDays, sweepStart, sweepEnd, onAlertsUpdate]);
+  }, [data, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate]);
 
   return <div ref={chartContainerRef} className="absolute inset-0" />;
 }

@@ -13,6 +13,8 @@ interface SidebarProps {
   setSweepStart: (val: string) => void;
   sweepEnd: string;
   setSweepEnd: (val: string) => void;
+  filterSweepsByWindow: boolean;
+  setFilterSweepsByWindow: (val: boolean) => void;
   showMtf: boolean;
   setShowMtf: (val: boolean) => void;
   strictMode: boolean;
@@ -55,6 +57,8 @@ export function Sidebar(props: SidebarProps) {
             setSweepStart={props.setSweepStart}
             sweepEnd={props.sweepEnd}
             setSweepEnd={props.setSweepEnd}
+            filterSweepsByWindow={props.filterSweepsByWindow}
+            setFilterSweepsByWindow={props.setFilterSweepsByWindow}
             showMtf={props.showMtf}
             setShowMtf={props.setShowMtf}
             strictMode={props.strictMode}
