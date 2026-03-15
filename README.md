@@ -1,6 +1,6 @@
-# SMC Radar - Smart Money Concepts Trading Dashboard
+# ITT - Intermediate Term Trading Dashboard
 
-A real-time trading dashboard that visualizes Smart Money Concepts (SMC) for XAUUSD (Gold) using candlestick charts with automated signal detection.
+A real-time trading dashboard that visualizes Intermediate Term Trading (ITT) concepts, based on Smart Money Concepts (SMC), for XAUUSD (Gold) using candlestick charts with automated signal detection.
 
 ## What is Smart Money Concepts (SMC)?
 
@@ -89,7 +89,7 @@ VITE_API_URL=http://localhost:3001
 ## Project Structure
 
 ```
-ITT-project/
+itt-project/
 ├── backend/
 │   ├── server.ts          # Express server with API endpoints
 │   ├── smc.ts             # SMC calculation logic

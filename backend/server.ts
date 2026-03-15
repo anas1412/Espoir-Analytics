@@ -15,8 +15,8 @@ app.get('/', (req, res) => {
 });
 
 // A simple in-memory cache
-let lastFetchTime = 0;
-let cachedData: any = null;
+// let lastFetchTime = 0;
+// let cachedData: any = null;
 
 app.get('/api/gold', async (req, res) => {
   const timeframe = (req.query.timeframe as string) || '15m';
@@ -45,8 +45,10 @@ app.get('/api/gold', async (req, res) => {
       lookbackDays = 7;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await yahooFinance.chart('GC=F', {
       period1: new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Adjusted lookback
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       interval: finalTimeframe as any,
     });
 
@@ -54,6 +56,7 @@ app.get('/api/gold', async (req, res) => {
       throw new Error('No data returned from Yahoo Finance');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let ohlc: Candle[] = result.quotes.map((q: any) => ({
       time: Math.floor(new Date(q.date).getTime() / 1000),
       open: q.open,
@@ -83,14 +86,15 @@ app.get('/api/gold', async (req, res) => {
 
     const fvgs = calculateFVG(ohlc);
     const swings = calculateSwingHighsLows(ohlc, swingLength);
-    const ith_itl = calculateITH_ITL(ohlc, swings, fvgs);
+    const ith_itl = calculateITH_ITL(ohlc, swings, fvgs, timeframe);
     const sweeps = calculateSweeps(ohlc, ith_itl);
 
     console.log(`[API] Returning ${ohlc.length} candles, ${ith_itl.length} ITH/ITL, and ${sweeps.length} sweeps`);
     res.json({ ohlc, fvgs, swings, ith_itl, sweeps });
-  } catch (error: any) {
-    console.error('Error fetching data:', error.message, error.stack);
-    res.status(500).json({ error: 'Failed to fetch gold data', details: error.message });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error fetching data:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to fetch gold data', details: err.message });
   }
 });
 

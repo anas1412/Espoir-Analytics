@@ -23,15 +23,20 @@ export interface Swing {
 
 export interface ITH_ITL {
   index: number;
+  time: number;
   type: 1 | -1; // 1 for ITH, -1 for ITL
   level: number;
+  term: 'Internal' | 'External';
+  timeframe?: string;
 }
 
 export interface Sweep {
   index: number;
+  time: number;
   type: 1 | -1; // 1 for Sweep of ITH (Bullish Sweep), -1 for Sweep of ITL (Bearish Sweep)
   level: number;
   sourceIndex: number; // The index of the ITH/ITL that was swept
+  timeframe?: string;
 }
 
 export function calculateFVG(ohlc: Candle[]): FVG[] {
@@ -65,7 +70,7 @@ export function calculateFVG(ohlc: Candle[]): FVG[] {
   }
 
   // Calculate mitigation
-  for (let fvg of fvgs) {
+  for (const fvg of fvgs) {
     for (let j = fvg.index + 2; j < ohlc.length; j++) {
       if (fvg.direction === 1 && ohlc[j].low <= fvg.top) {
         fvg.mitigatedIndex = j;
@@ -127,10 +132,22 @@ export function calculateSwingHighsLows(ohlc: Candle[], swingLength: number = 5)
   return cleanedSwings;
 }
 
-export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[]): ITH_ITL[] {
+export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], timeframe: string = '15m'): ITH_ITL[] {
   const ith_itl: ITH_ITL[] = [];
 
-  console.log(`[SMC] Processing ${ohlc.length} candles`);
+  // Classification: < 5m is Internal, >= 5m is External
+  // Timeframe formats: '1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'
+  let term: 'Internal' | 'External' = 'External';
+  const match = timeframe.match(/^(\d+)([mhd])$/);
+  if (match) {
+    const value = parseInt(match[1]);
+    const unit = match[2];
+    if (unit === 'm' && value < 5) {
+      term = 'Internal';
+    }
+  }
+
+  console.log(`[SMC] Processing ${ohlc.length} candles for ${timeframe} (${term})`);
   console.log(`[SMC] Found ${swings.length} swings and ${fvgs.length} FVGs`);
 
   let rejectedMitigated = 0;
@@ -144,7 +161,7 @@ export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[]): 
           const isMitigatedLater = fvg.mitigatedIndex === null || fvg.mitigatedIndex >= swing.index;
           if (isMitigatedLater) {
             if (swing.level >= fvg.bottom && swing.level <= fvg.top) {
-              ith_itl.push({ index: swing.index, type: 1, level: swing.level });
+              ith_itl.push({ index: swing.index, time: ohlc[swing.index].time as number, type: 1, level: swing.level, term, timeframe });
               break;
             } else {
               rejectedRange++;
@@ -161,7 +178,7 @@ export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[]): 
           const isMitigatedLater = fvg.mitigatedIndex === null || fvg.mitigatedIndex >= swing.index;
           if (isMitigatedLater) {
             if (swing.level >= fvg.bottom && swing.level <= fvg.top) {
-              ith_itl.push({ index: swing.index, type: -1, level: swing.level });
+              ith_itl.push({ index: swing.index, time: ohlc[swing.index].time as number, type: -1, level: swing.level, term, timeframe });
               break;
             } else {
               rejectedRange++;
@@ -206,9 +223,11 @@ export function calculateSweeps(ohlc: Candle[], ith_itl: ITH_ITL[]): Sweep[] {
       if (swept) {
         sweeps.push({
           index: i,
+          time: candle.time as number,
           type: signal.type,
           level: signal.level,
-          sourceIndex: signal.index
+          sourceIndex: signal.index,
+          timeframe: signal.timeframe
         });
         // We only take the first sweep for each ITH/ITL as the "signal trigger"
         break;
