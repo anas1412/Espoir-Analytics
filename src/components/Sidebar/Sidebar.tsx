@@ -18,6 +18,8 @@ interface SidebarProps {
   loading: boolean;
   showMtf: boolean;
   setShowMtf: (val: boolean) => void;
+  strictMode: boolean;
+  setStrictMode: (val: boolean) => void;
 }
 
 export function Sidebar(props: SidebarProps) {
@@ -53,6 +55,8 @@ export function Sidebar(props: SidebarProps) {
             setSweepEnd={props.setSweepEnd}
             showMtf={props.showMtf}
             setShowMtf={props.setShowMtf}
+            strictMode={props.strictMode}
+            setStrictMode={props.setStrictMode}
           />
           <MarketLogs 
             alerts={props.alerts} 

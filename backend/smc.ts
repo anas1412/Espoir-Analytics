@@ -132,7 +132,7 @@ export function calculateSwingHighsLows(ohlc: Candle[], swingLength: number = 5)
   return cleanedSwings;
 }
 
-export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], timeframe: string = '15m'): ITH_ITL[] {
+export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], timeframe: string = '15m', strictMode: boolean = true): ITH_ITL[] {
   const ith_itl: ITH_ITL[] = [];
 
   // Classification: < 5m is Internal, >= 5m is External
@@ -160,7 +160,11 @@ export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], t
         if (fvg.direction === -1) { // Bearish FVG
           const isMitigatedLater = fvg.mitigatedIndex === null || fvg.mitigatedIndex >= swing.index;
           if (isMitigatedLater) {
-            if (swing.level >= fvg.bottom && swing.level <= fvg.top) {
+            const inRange = strictMode 
+              ? (swing.level >= fvg.bottom && swing.level <= fvg.top)
+              : (swing.level >= fvg.bottom); // Discretionary: can pierce above top
+
+            if (inRange) {
               ith_itl.push({ index: swing.index, time: ohlc[swing.index].time as number, type: 1, level: swing.level, term, timeframe });
               break;
             } else {
@@ -177,7 +181,11 @@ export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], t
         if (fvg.direction === 1) { // Bullish FVG
           const isMitigatedLater = fvg.mitigatedIndex === null || fvg.mitigatedIndex >= swing.index;
           if (isMitigatedLater) {
-            if (swing.level >= fvg.bottom && swing.level <= fvg.top) {
+            const inRange = strictMode
+              ? (swing.level >= fvg.bottom && swing.level <= fvg.top)
+              : (swing.level <= fvg.top); // Discretionary: can pierce below bottom
+
+            if (inRange) {
               ith_itl.push({ index: swing.index, time: ohlc[swing.index].time as number, type: -1, level: swing.level, term, timeframe });
               break;
             } else {

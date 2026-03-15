@@ -11,6 +11,8 @@ interface ControlsProps {
   setSweepEnd: (val: string) => void;
   showMtf: boolean;
   setShowMtf: (val: boolean) => void;
+  strictMode: boolean;
+  setStrictMode: (val: boolean) => void;
 }
 
 export function Controls({
@@ -18,7 +20,8 @@ export function Controls({
   lookbackDays, setLookbackDays,
   sweepStart, setSweepStart,
   sweepEnd, setSweepEnd,
-  showMtf, setShowMtf
+  showMtf, setShowMtf,
+  strictMode, setStrictMode
 }: ControlsProps) {
   return (
     <section className="space-y-5">
@@ -85,6 +88,24 @@ export function Controls({
             type="checkbox"
             checked={showMtf}
             onChange={(e) => setShowMtf(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-700/50 bg-slate-800/50 text-indigo-600 focus:ring-indigo-500/50 transition-all cursor-pointer"
+          />
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-slate-800/50">
+          <div className="flex flex-col">
+            <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1 cursor-pointer select-none" htmlFor="strict-toggle">
+              Strict Mode
+            </label>
+            <span className="text-[8px] text-slate-600 ml-1 leading-none">
+              {strictMode ? 'Strictly inside FVG' : 'Allows piercing (Discretionary)'}
+            </span>
+          </div>
+          <input 
+            id="strict-toggle"
+            type="checkbox"
+            checked={strictMode}
+            onChange={(e) => setStrictMode(e.target.checked)}
             className="w-4 h-4 rounded border-slate-700/50 bg-slate-800/50 text-indigo-600 focus:ring-indigo-500/50 transition-all cursor-pointer"
           />
         </div>

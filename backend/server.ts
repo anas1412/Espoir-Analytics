@@ -22,8 +22,9 @@ app.get('/api/gold', async (req, res) => {
   const timeframe = (req.query.timeframe as string) || '15m';
   const range = (req.query.range as string) || '5d';
   const swingLength = parseInt(req.query.swingLength as string) || 5;
+  const strictMode = req.query.strictMode !== 'false';
 
-  console.log(`[API] Request: timeframe=${timeframe}, range=${range}, swingLength=${swingLength}`);
+  console.log(`[API] Request: timeframe=${timeframe}, range=${range}, swingLength=${swingLength}, strictMode=${strictMode}`);
 
   try {
     let finalTimeframe = timeframe;
@@ -86,7 +87,7 @@ app.get('/api/gold', async (req, res) => {
 
     const fvgs = calculateFVG(ohlc);
     const swings = calculateSwingHighsLows(ohlc, swingLength);
-    const ith_itl = calculateITH_ITL(ohlc, swings, fvgs, timeframe);
+    const ith_itl = calculateITH_ITL(ohlc, swings, fvgs, timeframe, strictMode);
     const sweeps = calculateSweeps(ohlc, ith_itl);
 
     console.log(`[API] Returning ${ohlc.length} candles, ${ith_itl.length} ITH/ITL, and ${sweeps.length} sweeps`);

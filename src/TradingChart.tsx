@@ -13,9 +13,10 @@ export function TradingChart() {
   const [sweepStart, setSweepStart] = useState('07:00');
   const [sweepEnd, setSweepEnd] = useState('22:00');
   const [showMtf, setShowMtf] = useState(false);
+  const [strictMode, setStrictMode] = useState(true);
   const [alerts, setAlerts] = useState<MarketAlert[]>([]);
 
-  const { data, loading, error } = useMarketData({ timeframe, swingLength, showMtf });
+  const { data, loading, error } = useMarketData({ timeframe, swingLength, showMtf, strictMode });
 
   const handleAlertsUpdate = useCallback((newAlerts: MarketAlert[]) => {
     setAlerts(newAlerts);
@@ -29,6 +30,7 @@ export function TradingChart() {
         sweepStart={sweepStart} setSweepStart={setSweepStart}
         sweepEnd={sweepEnd} setSweepEnd={setSweepEnd}
         showMtf={showMtf} setShowMtf={setShowMtf}
+        strictMode={strictMode} setStrictMode={setStrictMode}
         alerts={alerts}
         error={error}
         loading={loading}
