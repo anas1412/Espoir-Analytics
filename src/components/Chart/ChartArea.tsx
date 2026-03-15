@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createChart, CrosshairMode, type ISeriesApi, type SeriesMarker, type Time, CandlestickSeries, createSeriesMarkers, HistogramSeries, LineSeries } from 'lightweight-charts';
-import type { ChartData, MarketAlert } from '../../types';
+import type { ChartData, MarketAlert, ChartTheme } from '../../types';
 import { isTimeInWindow, timeframeToSeconds } from '../../utils/time';
 import { SESSIONS, isInSession, isNewDay } from '../../utils/sessions';
 
@@ -18,9 +18,10 @@ interface ChartAreaProps {
   showDayDividers: boolean;
   londonColor: string;
   nyColor: string;
+  theme: ChartTheme;
 }
 
-export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor }: ChartAreaProps) {
+export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor, theme }: ChartAreaProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -41,12 +42,12 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: '#000000' },
-        textColor: '#71717a',
+        background: { color: theme.backgroundColor },
+        textColor: theme.textColor,
       },
       grid: {
-        vertLines: { color: '#0f0f0f' },
-        horzLines: { color: '#0f0f0f' },
+        vertLines: { color: theme.gridColor },
+        horzLines: { color: theme.gridColor },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
@@ -54,21 +55,21 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: '#1a1a1a',
+        borderColor: theme.gridColor,
       },
       rightPriceScale: {
-        borderColor: '#1a1a1a',
+        borderColor: theme.gridColor,
         autoScale: true,
       }
     });
     chartRef.current = chart;
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: '#10b981',
-      downColor: '#f43f5e',
+      upColor: theme.upColor,
+      downColor: theme.downColor,
       borderVisible: false,
-      wickUpColor: '#10b981',
-      wickDownColor: '#f43f5e',
+      wickUpColor: theme.upColor,
+      wickDownColor: theme.downColor,
     });
     seriesRef.current = series;
     markersPluginRef.current = createSeriesMarkers(series);
@@ -164,13 +165,41 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     }
   }, [data.ohlc, showSessions, showDayDividers]);
 
-  // 3. Color Update (High Performance - No setData)
+  // 3. Theme Update (High Performance)
+  useEffect(() => {
+    if (!chartRef.current || !seriesRef.current) return;
+
+    chartRef.current.applyOptions({
+      layout: {
+        background: { color: theme.backgroundColor },
+        textColor: theme.textColor,
+      },
+      grid: {
+        vertLines: { color: theme.gridColor },
+        horzLines: { color: theme.gridColor },
+      },
+      timeScale: {
+        borderColor: theme.gridColor,
+      },
+      rightPriceScale: {
+        borderColor: theme.gridColor,
+      }
+    });
+
+    seriesRef.current.applyOptions({
+      upColor: theme.upColor,
+      downColor: theme.downColor,
+      wickUpColor: theme.upColor,
+      wickDownColor: theme.downColor,
+    });
+  }, [theme]);
+
+  // 4. Session Color Update (High Performance)
   useEffect(() => {
     if (!chartRef.current) return;
 
     sessionSeriesRef.current.forEach(({ series, config }) => {
       const hex = config.name === 'London' ? londonColor : nyColor;
-      // Faster hex to rgba
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);
       const b = parseInt(hex.slice(5, 7), 16);
@@ -178,7 +207,7 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     });
   }, [londonColor, nyColor]);
 
-    // 4. Markers & Alerts Update
+  // 5. Markers & Alerts Update
   useEffect(() => {
     if (!chartRef.current || !data.ohlc || data.ohlc.length === 0) return;
     const ohlc = data.ohlc;
@@ -296,8 +325,7 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     }, 0);
   }, [data.ith_itl, data.sweeps, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, timeframe]);
 
-
-  // 5. Handle Reset View
+  // 6. Handle Reset View
   useEffect(() => {
     if (chartRef.current && data.ohlc.length > 0) {
       const timeScale = chartRef.current.timeScale();

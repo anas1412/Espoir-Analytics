@@ -4,7 +4,7 @@ import { ChartHeader } from './components/Chart/ChartHeader';
 import { ChartArea } from './components/Chart/ChartArea';
 import { LoadingOverlay } from './components/shared/LoadingOverlay';
 import { useMarketData } from './hooks/useMarketData';
-import type { MarketAlert } from './types';
+import type { MarketAlert, ChartTheme } from './types';
 
 export function TradingChart() {
   const [timeframe, setTimeframe] = useState('15m');
@@ -25,6 +25,13 @@ export function TradingChart() {
   const [selectedMtfTfs, setSelectedMtfTfs] = useState(['5m', '15m', '30m', '1h', '4h']);
   const [alerts, setAlerts] = useState<MarketAlert[]>([]);
   const [resetCounter, setResetCounter] = useState(0);
+  const [theme, setTheme] = useState<ChartTheme>({
+    upColor: '#10b981',
+    downColor: '#f43f5e',
+    backgroundColor: '#000000',
+    gridColor: '#0f0f0f',
+    textColor: '#71717a',
+  });
 
   const { data, loading, error } = useMarketData({ 
     timeframe, 
@@ -62,6 +69,7 @@ export function TradingChart() {
         showDayDividers={showDayDividers} setShowDayDividers={setShowDayDividers}
         londonColor={londonColor} setLondonColor={setLondonColor}
         nyColor={nyColor} setNyColor={setNyColor}
+        theme={theme} setTheme={setTheme}
         alerts={alerts}
         error={error}
         loading={loading}
@@ -92,6 +100,7 @@ export function TradingChart() {
             showDayDividers={showDayDividers}
             londonColor={londonColor}
             nyColor={nyColor}
+            theme={theme}
           />
         </div>
       </div>

@@ -42,3 +42,11 @@ export interface MarketAlert {
   price: string;
   timestamp: number;
 }
+
+export interface ChartTheme {
+  upColor: string;
+  downColor: string;
+  backgroundColor: string;
+  gridColor: string;
+  textColor: string;
+}

@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { RotateCcw } from 'lucide-react';
 
 interface ControlsProps {
   swingLength: number;
@@ -23,6 +24,7 @@ interface ControlsProps {
   setLevelExpiryDays: (val: number) => void;
   showSweeps: boolean;
   setShowSweeps: (val: boolean) => void;
+  onResetStrategy: () => void;
 }
 
 export function Controls({
@@ -36,7 +38,8 @@ export function Controls({
   minFvgRatio, setMinFvgRatio,
   selectedMtfTfs, setSelectedMtfTfs,
   levelExpiryDays, setLevelExpiryDays,
-  showSweeps, setShowSweeps
+  showSweeps, setShowSweeps,
+  onResetStrategy
 }: ControlsProps) {
   const availableTfs = ['1m', '3m', '5m', '15m', '30m', '1h', '4h'];
 
@@ -50,8 +53,17 @@ export function Controls({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-2 text-zinc-500 mb-2">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">Strategy Parameters</h2>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-2 text-zinc-500">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">Strategy Parameters</h2>
+        </div>
+        <button
+          onClick={onResetStrategy}
+          title="Reset Strategy to Defaults"
+          className="p-1 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded transition-all group"
+        >
+          <RotateCcw size={12} className="group-active:rotate-[-90deg] transition-transform duration-200" />
+        </button>
       </div>
       
       <div className="space-y-8">
