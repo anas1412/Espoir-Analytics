@@ -35,7 +35,7 @@ export function Sidebar(props: SidebarProps) {
       initial={{ x: -380 }}
       animate={{ x: 0 }}
       transition={{ type: 'tween', duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-      className="w-[380px] bg-black border-r border-zinc-900 flex flex-col z-20 shadow-xl"
+      className="w-[380px] bg-black/60 backdrop-blur-2xl border-r border-zinc-900 flex flex-col z-20 shadow-xl"
     >
       <div className="p-6 border-b border-zinc-900">
         <div className="flex items-center space-x-3 mb-6">

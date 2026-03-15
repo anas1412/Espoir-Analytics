@@ -1,140 +1,99 @@
-# ITT - Intermediate Term Trading Dashboard
+# ITT - Intermediate Term Trading Analytics
 
-A real-time trading dashboard that visualizes Intermediate Term Trading (ITT) concepts, based on Smart Money Concepts (SMC), for XAUUSD (Gold) using candlestick charts with automated signal detection.
+A premium, real-time trading dashboard designed to visualize Intermediate Term Trading (ITT) concepts for XAUUSD (Gold). Built with an institutional-grade "Black & Silver" aesthetic, this platform automatically detects structural liquidity levels and sweeps across multiple timeframes.
 
-## What is Smart Money Concepts (SMC)?
+## The ITT Strategy (How We Trade)
 
-**SMC** is a trading methodology based on institutional order flow analysis:
+This dashboard is designed to execute a highly specific, multi-timeframe structural strategy. The core logic follows a strict step-by-step confirmation process:
 
-- **FVG (Fair Value Gap)**: Price inefficiency where candles leave gaps between highs/lows, creating areas where price often retests
-- **ITH (Intermediate Term High)**: A swing high that forms within a bearish FVG, indicating potential resistance
-- **ITL (Intermediate Term Low)**: A swing low that forms within a bullish FVG, indicating potential support
-- **Sweep**: When price breaks through an ITH/ITL level, triggering a potential reversal signal
+1. **Identify Liquidity:** The system constantly scans for **ITH** (Intermediate Term Highs) and **ITL** (Intermediate Term Lows).
+2. **Wait for the Sweep:** We wait for price to break through (sweep) an established ITH or ITL.
+3. **Seek Confirmation (The iFVG Check):** After a sweep, we look inside the "manipulation leg" for a singular **Inversion Fair Value Gap (iFVG)** to confirm the reversal.
+4. **Timeframe Cascading (1m  3m  5m):**
+   * We first check the **1-minute (1m)** chart. If there is exactly *one* iFVG, we take the trade. If there are *zero*, there is no trade.
+   * If there are *multiple* iFVGs on the 1m, we scale up to the **3-minute (3m)** chart. If there is exactly one iFVG, we trade.
+   * If there are *multiple* iFVGs on the 3m, we scale up to the **5-minute (5m)** chart. If there is exactly one iFVG, we trade.
+   * We **stop at 5m**. If the 5m chart still shows zero or multiple iFVGs, the setup is invalidated and we do not trade.
+
+---
+
+## Dashboard Configuration (Simple Explanations)
+
+The sidebar provides a high-end control panel to fine-tune the algorithm. Here is what every setting does in plain English:
+
+### Strategy Parameters
+* **Swing Sensitivity (Swing Length):** Adjusts how big the market turns need to be to be considered a valid high or low. A higher number means the dashboard will only highlight major, undeniable market peaks.
+* **Gap Filter (Min FVG Size %):** Fair Value Gaps (FVGs) are formed by 3 candles. This slider hides tiny, unimportant price gaps. For example, setting it to 10% means the gap must be at least 10% the size of the candle that made it, effectively removing market noise.
+* **Scan Depth (Lookback Days):** Exactly how many days of historical market data you want to load and analyze on the chart.
+
+### Time & Session Controls
+* **Session Only (Enforce Sweep Window):** When turned on, the system will *only* alert you to sweeps that happen during your active trading hours.
+* **Sweep Start / Sweep End:** The specific UTC hours you want to trade (e.g., London and New York sessions).
+
+### Advanced Display Modes
+* **Multi-Timeframe:** When activated, the chart will aggregate and display ITH/ITL levels and Sweeps from *all* timeframes (1m, 3m, 5m, 15m, 1h, 4h) simultaneously on your current chart.
+* **Strict Gaps (Strict Mode):** 
+  * *Turned On (Strict):* The tips of the swing highs/lows must stay perfectly inside the Fair Value Gap to be counted as an ITH/ITL.
+  * *Turned Off (Discretionary):* Allows the swing levels to pierce slightly through the gaps, accommodating for imperfect market conditions.
+
+---
+
+## Design & UI/UX (The Aesthetic)
+
+The application has been heavily customized to resemble an expensive, professional quant terminal:
+
+* **True Black & Silver:** A deeply contrasted color palette utilizing pure black (`#000000`) backgrounds, zinc/silver borders, and stark white text for maximum readability.
+* **Glassmorphism:** The sidebar and top navigation feature heavy frosted glass effects (`backdrop-blur-2xl`) over subtle ambient background glows.
+* **Fluid Animations:** Powered by **Framer Motion**, every interaction—from switching tabs (Setup vs. Logs), toggling switches, to hovering over timeframes—features satisfying, spring-physics-based sliding and fading.
+* **Premium Typography:** Standardized, highly legible font sizes with clear visual hierarchies (`font-black` for headers, mono-spaced fonts for numbers).
+* **Dynamic Charting:** The embedded Lightweight Chart seamlessly resizes with the window and perfectly matches the dark mode theme, featuring Emerald and Rose colored candles.
+
+---
 
 ## Technology Stack
 
 **Frontend:**
-- React 19 with TypeScript
-- Vite for build tooling
-- Lightweight Charts for visualization
-- Tailwind CSS for styling
+* React 19 (TypeScript)
+* Vite (Build Tooling)
+* Tailwind CSS + Framer Motion (Styling & Animation)
+* Lightweight Charts (Financial Charting)
+* Lucide React (Iconography)
 
 **Backend:**
-- Node.js with TypeScript
-- Express.js server
-- Yahoo Finance API for market data
+* Node.js / Express.js (TypeScript)
+* Yahoo Finance API (Market Data Provider)
 
-## Features
-
-- Real-time gold (XAUUSD) price data visualization
-- Automatic FVG, ITH, ITL, and Sweep detection
-- London/NY session time filtering
-- Multiple timeframe support (1m to 4h)
-- Adjustable swing length parameters
-- Signal logging and alerts
-
-## Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [npm](https://www.npmjs.com/) (comes with Node.js)
+---
 
 ## Running Locally
 
 ### 1. Install Dependencies
-
-**Frontend (root directory):**
 ```bash
+# In the root directory (Frontend)
 npm install
-```
 
-**Backend (backend directory):**
-```bash
+# In the backend directory
 cd backend
 npm install
 ```
 
-### 2. Start Backend Server
-
-In the `backend` directory:
+### 2. Start the Backend Server
 ```bash
+cd backend
 npm run dev
+# Runs on http://localhost:3001
 ```
 
-The backend will start on `http://localhost:3001`
-
-### 3. Start Frontend Dev Server
-
-In the root directory (in a separate terminal):
+### 3. Start the Frontend Dashboard
 ```bash
+# In the root directory
 npm run dev
+# Runs on http://localhost:5173
 ```
 
-The frontend will start on `http://localhost:5173`
+Open your browser and navigate to `http://localhost:5173` to view the terminal.
 
-### 4. Access the Application
+---
 
-Open your browser and navigate to `http://localhost:5173`
-
-## Configuration
-
-### Environment Variables (Optional)
-
-Create a `.env` file in the root or backend directory:
-
-```env
-PORT=3001
-VITE_API_URL=http://localhost:3001
-```
-
-## Project Structure
-
-```
-itt-project/
-├── backend/
-│   ├── server.ts          # Express server with API endpoints
-│   ├── smc.ts             # SMC calculation logic
-│   └── package.json
-├── src/
-│   ├── App.tsx            # Main application component
-│   ├── TradingChart.tsx   # Chart visualization component
-│   └── index.css          # Global styles
-├── package.json
-├── vite.config.ts
-└── README.md
-```
-
-## Available Scripts
-
-### Frontend
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run lint` - Run ESLint
-- `npm run preview` - Preview production build
-
-### Backend
-- `npm run dev` - Start development server with hot reload
-- `npm run start` - Start production server
-
-## Signal Definitions
-
-| Signal | Type | Meaning |
-|--------|------|---------|
-| ITH | Red Arrow Down | Intermediate Term High - Potential resistance |
-| ITL | Green Arrow Up | Intermediate Term Low - Potential support |
-| SWEEP | Yellow Circle | Price broke through ITH/ITL - Reversal signal |
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## Support
-
-For issues or questions, please open an issue in the repository.
+## License & Support
+This project is proprietary software for Intermediate Term Trading analytics. For issues, bugs, or feature requests regarding the multi-timeframe algorithm, please refer to the internal repository issues board.

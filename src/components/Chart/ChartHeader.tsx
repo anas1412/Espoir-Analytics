@@ -10,7 +10,7 @@ interface ChartHeaderProps {
 
 export function ChartHeader({ sweepStart, sweepEnd, timeframe, setTimeframe }: ChartHeaderProps) {
   return (
-    <header className="h-14 border-b border-zinc-900 bg-black/80 backdrop-blur-md flex items-center px-6 justify-between z-10 gap-4">
+    <header className="h-14 border-b border-zinc-900 bg-black/40 backdrop-blur-xl flex items-center px-6 justify-between z-10 gap-4">
       <div className="flex items-center space-x-8 min-w-0">
         <div className="flex items-center space-x-3 flex-shrink-0">
           <div className="w-8 h-8 bg-zinc-800 rounded-md flex items-center justify-center border border-zinc-700">

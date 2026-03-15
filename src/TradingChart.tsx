@@ -25,7 +25,11 @@ export function TradingChart() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-black text-zinc-100 font-sans selection:bg-zinc-500/30 overflow-hidden">
+    <div className="flex h-screen bg-[#000000] text-zinc-100 font-sans selection:bg-zinc-500/30 overflow-hidden relative">
+      {/* Background ambient glow for blur texture */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-zinc-900/20 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-zinc-900/20 blur-[120px] rounded-full pointer-events-none" />
+      
       <Sidebar 
         swingLength={swingLength} setSwingLength={setSwingLength}
         lookbackDays={lookbackDays} setLookbackDays={setLookbackDays}
