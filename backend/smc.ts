@@ -28,6 +28,8 @@ export interface ITH_ITL {
   level: number;
   term: 'Internal' | 'External';
   timeframe?: string;
+  sweepTime?: number;
+  sweepIndex?: number;
 }
 
 export interface Sweep {
@@ -241,9 +243,13 @@ export function calculateSweeps(ohlc: Candle[], ith_itl: ITH_ITL[]): Sweep[] {
       }
 
       if (swept) {
+        const sweepTime = candle.time as number;
+        signal.sweepTime = sweepTime;
+        signal.sweepIndex = i;
+
         sweeps.push({
           index: i,
-          time: candle.time as number,
+          time: sweepTime,
           type: signal.type,
           level: signal.level,
           sourceIndex: signal.index,

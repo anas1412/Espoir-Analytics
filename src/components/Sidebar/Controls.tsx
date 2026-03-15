@@ -19,6 +19,8 @@ interface ControlsProps {
   setMinFvgRatio: (val: number) => void;
   selectedMtfTfs: string[];
   setSelectedMtfTfs: (val: string[]) => void;
+  levelExpiryDays: number;
+  setLevelExpiryDays: (val: number) => void;
   showSweeps: boolean;
   setShowSweeps: (val: boolean) => void;
 }
@@ -33,6 +35,7 @@ export function Controls({
   strictMode, setStrictMode,
   minFvgRatio, setMinFvgRatio,
   selectedMtfTfs, setSelectedMtfTfs,
+  levelExpiryDays, setLevelExpiryDays,
   showSweeps, setShowSweeps
 }: ControlsProps) {
   const availableTfs = ['1m', '3m', '5m', '15m', '30m', '1h', '4h'];
@@ -245,6 +248,25 @@ export function Controls({
           </div>
           <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">
             {strictMode ? 'Levels must stay perfectly inside gaps.' : 'Allows levels to pierce through gaps.'}
+          </p>
+        </div>
+
+        {/* Level Expiry */}
+        <div className="space-y-4 pt-6 border-t border-zinc-900">
+          <div className="flex justify-between items-center px-0.5">
+            <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Level Expiry (Clean-up)</label>
+            <span className="text-zinc-100 font-mono text-xs bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-700">{levelExpiryDays}d</span>
+          </div>
+          <input 
+            type="range" 
+            min="1" 
+            max="30" 
+            value={levelExpiryDays}
+            onChange={(e) => setLevelExpiryDays(parseInt(e.target.value))}
+            className="w-full h-[3px] bg-zinc-800 rounded-full appearance-none cursor-pointer hover:bg-zinc-700 transition-colors"
+          />
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">
+            Automatically hides "live" (unswept) levels after {levelExpiryDays} days to keep the chart clean and relevant.
           </p>
         </div>
       </div>

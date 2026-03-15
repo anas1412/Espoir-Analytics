@@ -15,6 +15,8 @@ export interface ITH_ITL {
   level: number;
   term: 'Internal' | 'External';
   timeframe?: string;
+  sweepTime?: number;
+  sweepIndex?: number;
 }
 
 export interface Sweep {

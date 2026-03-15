@@ -24,6 +24,8 @@ interface SidebarProps {
   setMinFvgRatio: (val: number) => void;
   selectedMtfTfs: string[];
   setSelectedMtfTfs: (val: string[]) => void;
+  levelExpiryDays: number;
+  setLevelExpiryDays: (val: number) => void;
   showSweeps: boolean;
   setShowSweeps: (val: boolean) => void;
   showSessions: boolean;
@@ -117,6 +119,8 @@ export function Sidebar(props: SidebarProps) {
                 setMinFvgRatio={props.setMinFvgRatio}
                 selectedMtfTfs={props.selectedMtfTfs}
                 setSelectedMtfTfs={props.setSelectedMtfTfs}
+                levelExpiryDays={props.levelExpiryDays}
+                setLevelExpiryDays={props.setLevelExpiryDays}
                 showSweeps={props.showSweeps}
                 setShowSweeps={props.setShowSweeps}
               />

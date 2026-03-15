@@ -16,6 +16,7 @@ export function TradingChart() {
   const [showMtf, setShowMtf] = useState(false);
   const [strictMode, setStrictMode] = useState(false);
   const [minFvgRatio, setMinFvgRatio] = useState(0.1);
+  const [levelExpiryDays, setLevelExpiryDays] = useState(3);
   const [showSweeps, setShowSweeps] = useState(true);
   const [showSessions, setShowSessions] = useState(true);
   const [showDayDividers, setShowDayDividers] = useState(true);
@@ -55,6 +56,7 @@ export function TradingChart() {
         strictMode={strictMode} setStrictMode={setStrictMode}
         minFvgRatio={minFvgRatio} setMinFvgRatio={setMinFvgRatio}
         selectedMtfTfs={selectedMtfTfs} setSelectedMtfTfs={setSelectedMtfTfs}
+        levelExpiryDays={levelExpiryDays} setLevelExpiryDays={setLevelExpiryDays}
         showSweeps={showSweeps} setShowSweeps={setShowSweeps}
         showSessions={showSessions} setShowSessions={setShowSessions}
         showDayDividers={showDayDividers} setShowDayDividers={setShowDayDividers}
@@ -80,6 +82,7 @@ export function TradingChart() {
             data={data}
             timeframe={timeframe}
             lookbackDays={lookbackDays}
+            levelExpiryDays={levelExpiryDays}
             sweepStart={sweepStart}
             sweepEnd={sweepEnd}
             filterSweepsByWindow={filterSweepsByWindow}
