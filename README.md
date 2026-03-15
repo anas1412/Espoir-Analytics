@@ -17,6 +17,23 @@ This dashboard is designed to execute a highly specific, multi-timeframe structu
 
 ---
 
+## Technical Terms (Simple Definitions)
+
+If you are new to Smart Money Concepts (SMC) and Intermediate Term Trading (ITT), here is a simple breakdown of the core terms used in this dashboard:
+
+* **FVG (Fair Value Gap):** A 3-candle pattern where the first and third candles do not overlap, leaving an empty "gap" in price. It acts as a magnet where price is often drawn back to fill the inefficiency.
+* **iFVG (Inversion Fair Value Gap):** A Fair Value Gap that was aggressively broken and closed through by price. Instead of acting as its original support/resistance, it "inverts" and acts as the exact opposite (e.g., old support becomes new resistance).
+* **Sweep:** When price briefly pushes above a previous high or below a previous low to grab liquidity (triggering stop losses) before quickly reversing direction. It's a false breakout.
+* **ITH (Intermediate Term High):** A swing high that forms inside a bearish Fair Value Gap. It represents a strong structural resistance level.
+  * **Internal ITH:** Forms on lower timeframes (under 5 minutes, like 1m or 3m).
+  * **External ITH:** Forms on higher timeframes (5 minutes or higher).
+* **ITL (Intermediate Term Low):** A swing low that forms inside a bullish Fair Value Gap. It represents a strong structural support level.
+  * **Internal ITL:** Forms on lower timeframes (under 5 minutes).
+  * **External ITL:** Forms on higher timeframes (5 minutes or higher).
+* **Manipulation Leg:** The aggressive, fast price move that sweeps the ITH or ITL liquidity before reversing. It is the specific "trap" set by smart money, and we look for our iFVG confirmation inside this specific leg.
+
+---
+
 ## Dashboard Configuration (Simple Explanations)
 
 The sidebar provides a high-end control panel to fine-tune the algorithm. Here is what every setting does in plain English:
