@@ -384,12 +384,13 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
         createBoxLine(conf.ifvg.bottom);
 
         // Add "CONFIRMED" marker
+        const shLabel = conf.isStopHunt ? ` (SH ${conf.stopHuntCount})` : '';
         markers.push({
           time: conf.ifvg.inversionTime as any,
           position: isShort ? 'belowBar' : 'aboveBar',
           color: boxColor,
           shape: 'arrowUp',
-          text: `CONFIRMED ${conf.timeframe}`,
+          text: `CONFIRMED ${conf.timeframe}${shLabel}`,
           size: 1,
         });
 
@@ -397,25 +398,28 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           id: conf.id,
           time: timeStr,
           type: 'CONFIRMATION',
-          subtype: `${conf.timeframe} CONFIRMED`,
+          subtype: `${conf.timeframe} CONFIRMED${shLabel}`,
           price: conf.sweepPrice.toFixed(2),
           timestamp: conf.sweepTime
         });
       } else if (conf.status === 'Cascading') {
+        const shLabel = conf.isStopHunt ? ` (SH ${conf.stopHuntCount})` : '';
         newAlerts.push({
           id: conf.id,
           time: timeStr,
           type: 'CASCADING',
-          subtype: `${conf.timeframe} Multiple FVGs (${conf.ifvgCount})`,
+          subtype: `${conf.timeframe} Multi FVGs (${conf.ifvgCount})${shLabel}`,
           price: conf.sweepPrice.toFixed(2),
           timestamp: conf.sweepTime
         });
       } else if (conf.status === 'Invalid') {
+        const shLabel = conf.isStopHunt ? ` (SH ${conf.stopHuntCount})` : '';
+        const reason = conf.ifvgCount === 0 ? 'No qualifying FVG' : 'Extreme Violated';
         newAlerts.push({
           id: conf.id,
           time: timeStr,
           type: 'INVALID',
-          subtype: `${conf.timeframe} No qualifying FVG`,
+          subtype: `${conf.timeframe} ${reason}${shLabel}`,
           price: conf.sweepPrice.toFixed(2),
           timestamp: conf.sweepTime
         });

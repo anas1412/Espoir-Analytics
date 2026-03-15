@@ -49,6 +49,9 @@ export interface Confirmation {
   ifvg?: IFVG;
   legStartIndex: number;
   legEndIndex: number;
+  isStopHunt?: boolean;
+  stopHuntCount?: number;
+  violationTime?: number;
 }
 
 export interface ChartData {

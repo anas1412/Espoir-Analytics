@@ -55,13 +55,15 @@ export interface Confirmation {
   id: string;
   type: 1 | -1; // 1 for Sweep of ITH (Short Reversal), -1 for Sweep of ITL (Long Reversal)
   timeframe: string;
-  status: 'Confirmed' | 'Invalid' | 'Cascading';
+  status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated';
   sweepTime: number;
   sweepPrice: number;
   ifvgCount: number;
   ifvg?: IFVG;
   legStartIndex: number;
   legEndIndex: number;
+  legExtreme: number;
+  isStopHunt?: boolean;
 }
 
 export function calculateFVG(ohlc: Candle[], minFvgRatio: number = 0): FVG[] {
@@ -172,8 +174,6 @@ export function calculateSwingHighsLows(ohlc: Candle[], swingLength: number = 5)
 export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], timeframe: string = '15m', strictMode: boolean = true): ITH_ITL[] {
   const ith_itl: ITH_ITL[] = [];
 
-  // Classification: < 5m is Internal, >= 5m is External
-  // Timeframe formats: '1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'
   let term: 'Internal' | 'External' = 'External';
   const match = timeframe.match(/^(\d+)([mhd])$/);
   if (match) {
@@ -185,30 +185,22 @@ export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], t
   }
 
   console.log(`[SMC] Processing ${ohlc.length} candles for ${timeframe} (${term})`);
-  console.log(`[SMC] Found ${swings.length} swings and ${fvgs.length} FVGs`);
-
-  let rejectedMitigated = 0;
-  let rejectedRange = 0;
 
   for (const swing of swings) {
     if (swing.type === 1) { // Swing High
       for (const fvg of fvgs) {
-        if (fvg.index >= swing.index) continue; // FVG must form before the swing
+        if (fvg.index >= swing.index) continue;
         if (fvg.direction === -1) { // Bearish FVG
           const isMitigatedLater = fvg.mitigatedIndex === null || fvg.mitigatedIndex >= swing.index;
           if (isMitigatedLater) {
             const inRange = strictMode 
               ? (swing.level >= fvg.bottom && swing.level <= fvg.top)
-              : (swing.level >= fvg.bottom); // Discretionary: can pierce above top
+              : (swing.level >= fvg.bottom);
 
             if (inRange) {
               ith_itl.push({ index: swing.index, time: ohlc[swing.index].time as number, type: 1, level: swing.level, term, timeframe });
               break;
-            } else {
-              rejectedRange++;
             }
-          } else {
-            rejectedMitigated++;
           }
         }
       }
@@ -220,24 +212,17 @@ export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], t
           if (isMitigatedLater) {
             const inRange = strictMode
               ? (swing.level >= fvg.bottom && swing.level <= fvg.top)
-              : (swing.level <= fvg.top); // Discretionary: can pierce below bottom
+              : (swing.level <= fvg.top);
 
             if (inRange) {
               ith_itl.push({ index: swing.index, time: ohlc[swing.index].time as number, type: -1, level: swing.level, term, timeframe });
               break;
-            } else {
-              rejectedRange++;
             }
-          } else {
-            rejectedMitigated++;
           }
         }
       }
     }
   }
-
-  console.log(`[SMC] Detected ${ith_itl.length} ITH/ITL signals`);
-  console.log(`[SMC] Rejected: ${rejectedMitigated} (Mitigated too early), ${rejectedRange} (Out of price range)`);
 
   return ith_itl;
 }
@@ -248,21 +233,14 @@ export function calculateSweeps(ohlc: Candle[], ith_itl: ITH_ITL[]): Sweep[] {
   for (const signal of ith_itl) {
     const isITH = signal.type === 1;
     
-    // Find the first candle that sweeps the level after the signal index
     for (let i = signal.index + 1; i < ohlc.length; i++) {
       const candle = ohlc[i];
       let swept = false;
 
       if (isITH) {
-        // Sweep of ITH (High)
-        if (candle.high > signal.level) {
-          swept = true;
-        }
+        if (candle.high > signal.level) swept = true;
       } else {
-        // Sweep of ITL (Low)
-        if (candle.low < signal.level) {
-          swept = true;
-        }
+        if (candle.low < signal.level) swept = true;
       }
 
       if (swept) {
@@ -278,7 +256,6 @@ export function calculateSweeps(ohlc: Candle[], ith_itl: ITH_ITL[]): Sweep[] {
           sourceIndex: signal.index,
           timeframe: signal.timeframe
         });
-        // We only take the first sweep for each ITH/ITL as the "signal trigger"
         break;
       }
     }
@@ -297,9 +274,9 @@ export function calculateIFVGs(ohlc: Candle[], fvgs: FVG[]): IFVG[] {
         const candle = ohlc[i];
         let inverted = false;
 
-        if (fvg.direction === 1) { // Bullish FVG
+        if (fvg.direction === 1) {
           if (candle.close < fvg.bottom) inverted = true;
-        } else { // Bearish FVG
+        } else {
           if (candle.close > fvg.top) inverted = true;
         }
 
@@ -333,71 +310,108 @@ export function calculateConfirmations(
   const confirmations: Confirmation[] = [];
 
   for (const sweep of sweeps) {
-    // 1. Identify Manipulation Leg
     let legStartIndex = sweep.sourceIndex;
     const isITH = sweep.type === 1;
 
     for (let i = swings.length - 1; i >= 0; i--) {
       const s = swings[i];
       if (s.index < sweep.index && s.index > sweep.sourceIndex) {
-        if (isITH && s.type === -1) { // Sweep High -> looking for Swing Low
+        if (isITH && s.type === -1) {
           legStartIndex = s.index;
           break;
-        } else if (!isITH && s.type === 1) { // Sweep Low -> looking for Swing High
+        } else if (!isITH && s.type === 1) {
           legStartIndex = s.index;
           break;
         }
       }
     }
 
-    // 2. Count ALL FVGs in the leg
-    const legFVGs = fvgs.filter(fvg => 
-      fvg.index >= legStartIndex && 
-      fvg.index <= sweep.index &&
-      (isITH ? fvg.direction === 1 : fvg.direction === -1)
-    );
-
-    let status: 'Confirmed' | 'Invalid' | 'Cascading' = 'Invalid';
-    let confirmedIFVG: IFVG | undefined = undefined;
-
-    if (legFVGs.length === 0) {
-      status = 'Invalid';
-    } else if (legFVGs.length > 1) {
-      status = 'Cascading';
-    } else if (legFVGs.length === 1) {
-      // 3. Singular FVG found. Now check for Inversion.
-      const targetFVG = legFVGs[0];
-      const inversion = ifvgs.find(ifvg => 
-        ifvg.index === targetFVG.index && 
-        ifvg.inversionIndex >= sweep.index
+    const processLeg = (start: number, end: number, isSH: boolean = false): Confirmation => {
+      const legFVGs = fvgs.filter(fvg => 
+        fvg.index >= start && 
+        fvg.index <= end &&
+        (isITH ? fvg.direction === 1 : fvg.direction === -1)
       );
 
-      if (inversion) {
-        status = 'Confirmed';
-        confirmedIFVG = inversion;
-      } else {
+      const slice = ohlc.slice(start, end + 1);
+      const legExtreme = isITH 
+        ? Math.max(...slice.map(c => c.high)) 
+        : Math.min(...slice.map(c => c.low));
+
+      let status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated' = 'Invalid';
+      let confirmedIFVG: IFVG | undefined = undefined;
+
+      if (legFVGs.length === 0) {
         status = 'Invalid';
+      } else if (legFVGs.length > 1) {
+        status = 'Cascading';
+      } else if (legFVGs.length === 1) {
+        const targetFVG = legFVGs[0];
+        const inversion = ifvgs.find(ifvg => ifvg.index === targetFVG.index && ifvg.inversionIndex >= end);
+        
+        if (inversion) {
+          let violated = false;
+          for (let i = end + 1; i < inversion.inversionIndex; i++) {
+            if (isITH ? ohlc[i].high > legExtreme : ohlc[i].low < legExtreme) {
+              violated = true;
+              break;
+            }
+          }
+          if (violated) {
+            status = 'Violated';
+          } else {
+            status = 'Confirmed';
+            confirmedIFVG = inversion;
+          }
+        } else {
+          for (let i = end + 1; i < ohlc.length; i++) {
+            if (isITH ? ohlc[i].high > legExtreme : ohlc[i].low < legExtreme) {
+              status = 'Violated';
+              break;
+            }
+          }
+        }
+      }
+
+      const tfValue = parseInt(timeframe);
+      if (timeframe.includes('m') && tfValue >= 5 && status === 'Cascading') {
+        status = 'Invalid';
+      }
+
+      return {
+        id: `${ohlc[end].time}-${timeframe}-${isITH ? 'Short' : 'Long'}${isSH ? '-SH' : ''}`,
+        type: isITH ? 1 : -1,
+        timeframe,
+        status,
+        sweepTime: ohlc[end].time as number,
+        sweepPrice: sweep.level,
+        ifvgCount: legFVGs.length,
+        ifvg: confirmedIFVG,
+        legStartIndex: start,
+        legEndIndex: end,
+        legExtreme,
+        isStopHunt: isSH
+      };
+    };
+
+    let result = processLeg(legStartIndex, sweep.index);
+
+    if (result.status === 'Violated' || (result.status === 'Invalid' && result.ifvgCount === 0)) {
+      let shSweepIndex = -1;
+      for (let i = sweep.index + 1; i < ohlc.length; i++) {
+        if (isITH ? ohlc[i].high > result.legExtreme : ohlc[i].low < result.legExtreme) {
+          shSweepIndex = i;
+          break;
+        }
+      }
+
+      if (shSweepIndex !== -1) {
+        const shResult = processLeg(sweep.index, shSweepIndex, true);
+        result = shResult;
       }
     }
 
-    // 5m constraint
-    const tfValue = parseInt(timeframe);
-    if (timeframe.includes('m') && tfValue >= 5 && status === 'Cascading') {
-      status = 'Invalid';
-    }
-
-    confirmations.push({
-      id: `${sweep.time}-${timeframe}-${isITH ? 'Short' : 'Long'}`,
-      type: isITH ? 1 : -1,
-      timeframe,
-      status,
-      sweepTime: sweep.time,
-      sweepPrice: sweep.level,
-      ifvgCount: legFVGs.length,
-      ifvg: confirmedIFVG,
-      legStartIndex,
-      legEndIndex: sweep.index
-    });
+    confirmations.push(result);
   }
 
   return confirmations;
