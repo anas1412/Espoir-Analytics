@@ -12,7 +12,7 @@ interface UseMarketDataParams {
 }
 
 export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, minFvgRatio, selectedMtfTfs, showSweeps }: UseMarketDataParams) => {
-  const [data, setData] = useState<ChartData>({ ohlc: [], ith_itl: [], sweeps: [] });
+  const [data, setData] = useState<ChartData>({ ohlc: [], ith_itl: [], sweeps: [], confirmations: [] });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +34,7 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
 
           if (result.error) {
             setError(result.error);
-            setData({ ohlc: [], ith_itl: [], sweeps: [] });
+            setData({ ohlc: [], ith_itl: [], sweeps: [], confirmations: [] });
           } else {
             // Filter out sweeps if showSweeps is false
             if (!showSweeps) result.sweeps = [];
@@ -52,6 +52,8 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
              if (json.ith_itl) json.ith_itl.forEach((s: any) => s.timeframe = tf);
              // eslint-disable-next-line @typescript-eslint/no-explicit-any
              if (json.sweeps) json.sweeps.forEach((s: any) => s.timeframe = tf);
+             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             if (json.confirmations) json.confirmations.forEach((c: any) => c.timeframe = tf);
              return json;
           };
           
@@ -62,7 +64,7 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
           
           if (!mainResult || mainResult.error) {
             setError(mainResult?.error || 'Failed to fetch main timeframe');
-            setData({ ohlc: [], ith_itl: [], sweeps: [] });
+            setData({ ohlc: [], ith_itl: [], sweeps: [], confirmations: [] });
             return;
           }
 
@@ -70,6 +72,8 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
           let combinedIthItl: any[] = [];
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let combinedSweeps: any[] = [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let combinedConfirmations: any[] = [];
           
           for (let i=0; i < allTfs.length; i++) {
              // Only include signals from the selected MTF timeframes
@@ -79,12 +83,14 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
                  // Only add sweeps if showSweeps is true
                  if (showSweeps) {
                    combinedSweeps = combinedSweeps.concat(results[i].sweeps || []);
+                   combinedConfirmations = combinedConfirmations.concat(results[i].confirmations || []);
                  }
              }
           }
 
           mainResult.ith_itl = combinedIthItl;
           mainResult.sweeps = combinedSweeps;
+          mainResult.confirmations = combinedConfirmations;
           
           setData(mainResult);
         }
@@ -92,7 +98,7 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
         if (!isMounted) return;
         console.error('Fetch error:', err);
         setError('Failed to fetch data from backend. Ensure server is running.');
-        setData({ ohlc: [], ith_itl: [], sweeps: [] });
+        setData({ ohlc: [], ith_itl: [], sweeps: [], confirmations: [] });
       } finally {
         if (isMounted) {
           setLoading(false);

@@ -28,16 +28,40 @@ export interface Sweep {
   timeframe?: string;
 }
 
+export interface IFVG {
+  index: number;
+  time: number;
+  type: 1 | -1;
+  top: number;
+  bottom: number;
+  inversionTime: number;
+  inversionIndex: number;
+}
+
+export interface Confirmation {
+  id: string;
+  type: 1 | -1;
+  timeframe: string;
+  status: 'Confirmed' | 'Invalid' | 'Cascading';
+  sweepTime: number;
+  sweepPrice: number;
+  ifvgCount: number;
+  ifvg?: IFVG;
+  legStartIndex: number;
+  legEndIndex: number;
+}
+
 export interface ChartData {
   ohlc: Candle[];
   ith_itl: ITH_ITL[];
   sweeps: Sweep[];
+  confirmations: Confirmation[];
 }
 
 export interface MarketAlert {
   id: string;
   time: string;
-  type: 'ITH' | 'ITL' | 'SWEEP';
+  type: 'ITH' | 'ITL' | 'SWEEP' | 'CONFIRMATION' | 'CASCADING' | 'INVALID';
   subtype: string;
   price: string;
   timestamp: number;

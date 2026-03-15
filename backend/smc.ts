@@ -41,6 +41,29 @@ export interface Sweep {
   timeframe?: string;
 }
 
+export interface IFVG {
+  index: number;
+  time: number;
+  type: 1 | -1; // 1 for Bullish FVG that was Inverted Down (Bearish iFVG), -1 for Bearish FVG that was Inverted Up (Bullish iFVG)
+  top: number;
+  bottom: number;
+  inversionTime: number;
+  inversionIndex: number;
+}
+
+export interface Confirmation {
+  id: string;
+  type: 1 | -1; // 1 for Sweep of ITH (Short Reversal), -1 for Sweep of ITL (Long Reversal)
+  timeframe: string;
+  status: 'Confirmed' | 'Invalid' | 'Cascading';
+  sweepTime: number;
+  sweepPrice: number;
+  ifvgCount: number;
+  ifvg?: IFVG;
+  legStartIndex: number;
+  legEndIndex: number;
+}
+
 export function calculateFVG(ohlc: Candle[], minFvgRatio: number = 0): FVG[] {
   const fvgs: FVG[] = [];
   
@@ -263,4 +286,119 @@ export function calculateSweeps(ohlc: Candle[], ith_itl: ITH_ITL[]): Sweep[] {
 
   console.log(`[SMC] Detected ${sweeps.length} Sweeps of ITH/ITL`);
   return sweeps;
+}
+
+export function calculateIFVGs(ohlc: Candle[], fvgs: FVG[]): IFVG[] {
+  const ifvgs: IFVG[] = [];
+
+  for (const fvg of fvgs) {
+    if (fvg.mitigatedIndex !== null) {
+      for (let i = fvg.mitigatedIndex; i < ohlc.length; i++) {
+        const candle = ohlc[i];
+        let inverted = false;
+
+        if (fvg.direction === 1) { // Bullish FVG
+          if (candle.close < fvg.bottom) inverted = true;
+        } else { // Bearish FVG
+          if (candle.close > fvg.top) inverted = true;
+        }
+
+        if (inverted) {
+          ifvgs.push({
+            index: fvg.index,
+            time: ohlc[fvg.index].time as number,
+            type: fvg.direction,
+            top: fvg.top,
+            bottom: fvg.bottom,
+            inversionTime: ohlc[i].time as number,
+            inversionIndex: i
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  return ifvgs;
+}
+
+export function calculateConfirmations(
+  ohlc: Candle[],
+  sweeps: Sweep[],
+  fvgs: FVG[],
+  ifvgs: IFVG[],
+  swings: Swing[],
+  timeframe: string
+): Confirmation[] {
+  const confirmations: Confirmation[] = [];
+
+  for (const sweep of sweeps) {
+    // 1. Identify Manipulation Leg
+    let legStartIndex = sweep.sourceIndex;
+    const isITH = sweep.type === 1;
+
+    for (let i = swings.length - 1; i >= 0; i--) {
+      const s = swings[i];
+      if (s.index < sweep.index && s.index > sweep.sourceIndex) {
+        if (isITH && s.type === -1) { // Sweep High -> looking for Swing Low
+          legStartIndex = s.index;
+          break;
+        } else if (!isITH && s.type === 1) { // Sweep Low -> looking for Swing High
+          legStartIndex = s.index;
+          break;
+        }
+      }
+    }
+
+    // 2. Count ALL FVGs in the leg
+    const legFVGs = fvgs.filter(fvg => 
+      fvg.index >= legStartIndex && 
+      fvg.index <= sweep.index &&
+      (isITH ? fvg.direction === 1 : fvg.direction === -1)
+    );
+
+    let status: 'Confirmed' | 'Invalid' | 'Cascading' = 'Invalid';
+    let confirmedIFVG: IFVG | undefined = undefined;
+
+    if (legFVGs.length === 0) {
+      status = 'Invalid';
+    } else if (legFVGs.length > 1) {
+      status = 'Cascading';
+    } else if (legFVGs.length === 1) {
+      // 3. Singular FVG found. Now check for Inversion.
+      const targetFVG = legFVGs[0];
+      const inversion = ifvgs.find(ifvg => 
+        ifvg.index === targetFVG.index && 
+        ifvg.inversionIndex >= sweep.index
+      );
+
+      if (inversion) {
+        status = 'Confirmed';
+        confirmedIFVG = inversion;
+      } else {
+        status = 'Invalid';
+      }
+    }
+
+    // 5m constraint
+    const tfValue = parseInt(timeframe);
+    if (timeframe.includes('m') && tfValue >= 5 && status === 'Cascading') {
+      status = 'Invalid';
+    }
+
+    confirmations.push({
+      id: `${sweep.time}-${timeframe}-${isITH ? 'Short' : 'Long'}`,
+      type: isITH ? 1 : -1,
+      timeframe,
+      status,
+      sweepTime: sweep.time,
+      sweepPrice: sweep.level,
+      ifvgCount: legFVGs.length,
+      ifvg: confirmedIFVG,
+      legStartIndex,
+      legEndIndex: sweep.index
+    });
+  }
+
+  return confirmations;
 }

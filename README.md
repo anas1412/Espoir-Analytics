@@ -8,13 +8,13 @@ This dashboard is designed to execute a highly specific, multi-timeframe structu
 
 1. **Identify Liquidity:** The system constantly scans for **ITH** (Intermediate Term Highs) and **ITL** (Intermediate Term Lows).
 2. **Wait for the Sweep:** We wait for price to break through (sweep) an established ITH or ITL.
-3. **Seek Confirmation (The iFVG Check):** After a sweep, we look inside the "manipulation leg" for a singular **Inversion Fair Value Gap (iFVG)** to confirm the reversal.
-   * **The Stop Hunt Scenario:** If no iFVG confirmation appears after the initial sweep, we wait. If the price then sweeps the newly formed swing extreme (a second sweep), this is called a **Stop Hunt**. If our singular iFVG confirmation appears inside the manipulation leg of this *second* sweep, the trade becomes valid.
-4. **Timeframe Cascading (1m  3m  5m):**
-   * We first check the **1-minute (1m)** chart. If there is exactly *one* iFVG, we take the trade. If there are *zero*, there is no trade.
-   * If there are *multiple* iFVGs on the 1m, we scale up to the **3-minute (3m)** chart. If there is exactly one iFVG, we trade.
-   * If there are *multiple* iFVGs on the 3m, we scale up to the **5-minute (5m)** chart. If there is exactly one iFVG, we trade.
-   * We **stop at 5m**. If the 5m chart still shows zero or multiple iFVGs, the setup is invalidated and we do not trade.
+3. **Seek Confirmation (The FVG Count):** After a sweep, we define the **Manipulation Leg** (from the most recent swing extreme before the sweep to the sweep candle itself) and count the **Fair Value Gaps (FVGs)** within it.
+   * **Step A (The Count):** If zero (0) FVGs exist, the setup is invalidated. If multiple (>1) FVGs exist, we **Cascade** to the next timeframe to seek structural clarity.
+   * **Step B (The Inversion):** If exactly **one (1)** FVG exists, we wait for price to **close through** (invert) this gap. Once it closes through, it becomes an **iFVG** and the trade is **Confirmed**.
+   * **The Stop Hunt Scenario:** (Future Phase) If no qualifying FVG appears, we wait for a second sweep of the newly formed swing extreme before re-triggering the confirmation logic.
+4. **Timeframe Cascading (1m → 3m → 5m):**
+    * We scale through timeframes (1m -> 3m -> 5m) seeking the "Rule of One" (exactly one FVG in the leg). 
+    * **Finality:** We stop at 5m. If the 5m chart still shows zero or multiple FVGs, the setup is invalidated and we do not trade.
 
 ---
 

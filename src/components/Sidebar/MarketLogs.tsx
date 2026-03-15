@@ -50,17 +50,26 @@ export function MarketLogs({ alerts, error, loading }: MarketLogsProps) {
                 exit={{ opacity: 0, scale: 0.95 }}
                 layout
                 className={`group relative overflow-hidden p-4 rounded-md border transition-all cursor-default shadow-sm ${
-                  alert.type === 'SWEEP' 
-                    ? 'bg-zinc-900/40 border-zinc-800 hover:border-white/20' 
+                  alert.type === 'CONFIRMATION'
+                    ? 'bg-emerald-900/20 border-emerald-500/40 hover:border-emerald-500'
+                    : alert.type === 'CASCADING'
+                    ? 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
+                    : alert.type === 'INVALID'
+                    ? 'bg-zinc-950/50 border-zinc-900 opacity-60 hover:opacity-100'
+                    : alert.type === 'SWEEP' 
+                    ? 'bg-amber-900/10 border-amber-500/30 hover:border-amber-500' 
                     : 'bg-zinc-950 border-zinc-900 hover:border-zinc-800'
                 }`}
               >
                 <div className="flex justify-between items-start mb-2.5">
                   <div className="flex flex-col">
                     <span className={`text-[10px] font-black uppercase tracking-widest ${
+                      alert.type === 'CONFIRMATION' ? 'text-emerald-400' :
+                      alert.type === 'CASCADING' ? 'text-zinc-400' :
+                      alert.type === 'INVALID' ? 'text-zinc-600' :
+                      alert.type === 'SWEEP' ? 'text-amber-400' :
                       alert.type === 'ITH' ? 'text-rose-500' : 
-                      alert.type === 'ITL' ? 'text-emerald-500' :
-                      'text-white'
+                      'text-emerald-500'
                     }`}>
                       {alert.subtype || alert.type}
                     </span>

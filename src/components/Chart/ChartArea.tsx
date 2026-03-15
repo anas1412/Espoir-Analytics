@@ -35,6 +35,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
   const raySeriesRef = useRef<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersPluginRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const confirmationSeriesRef = useRef<any[]>([]);
   const isFirstLoadRef = useRef(true);
 
   // 1. Initial Chart Setup
@@ -261,6 +263,10 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     raySeriesRef.current.forEach(s => chartRef.current?.removeSeries(s));
     raySeriesRef.current = [];
 
+    // Clear previous Confirmation Series
+    confirmationSeriesRef.current.forEach(s => chartRef.current?.removeSeries(s));
+    confirmationSeriesRef.current = [];
+
     const markers: SeriesMarker<Time>[] = [];
     const newAlerts: MarketAlert[] = [];
     const signals = data.ith_itl || [];
@@ -284,6 +290,7 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       if (isExpired) return;
 
       const endTime = sweepTime || (ohlc[ohlc.length-1].time as number);
+      if (preciseTime === endTime) return; // Skip zero-length rays
       const tfPrefix = signal.timeframe ? `[${signal.timeframe}] ` : '';
 
       // Create Ray Series
@@ -345,12 +352,82 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       });
     });
 
+    // 2. Handle Confirmations (Confirmed, Invalid, Cascading)
+    const confirmations = data.confirmations || [];
+    confirmations.forEach((conf) => {
+      const isShort = conf.type === 1;
+      const timeStr = new Date(conf.sweepTime * 1000).toLocaleString();
+      
+      if (conf.status === 'Confirmed' && conf.ifvg) {
+        // Draw the iFVG box
+        const boxColor = isShort ? '#f43f5e' : '#10b981';
+        
+        const createBoxLine = (val: number) => {
+          if (conf.ifvg!.time === conf.ifvg!.inversionTime) return;
+          const s = chartRef.current.addSeries(LineSeries, {
+            color: boxColor,
+            lineWidth: 2,
+            lineStyle: 0, // Solid
+            priceLineVisible: false,
+            lastValueVisible: false,
+            crosshairMarkerVisible: false,
+            autoscaleInfoProvider: () => null,
+          });
+          s.setData([
+            { time: conf.ifvg!.time as any, value: val },
+            { time: conf.ifvg!.inversionTime as any, value: val }
+          ]);
+          confirmationSeriesRef.current.push(s);
+        };
+
+        createBoxLine(conf.ifvg.top);
+        createBoxLine(conf.ifvg.bottom);
+
+        // Add "CONFIRMED" marker
+        markers.push({
+          time: conf.ifvg.inversionTime as any,
+          position: isShort ? 'belowBar' : 'aboveBar',
+          color: boxColor,
+          shape: 'arrowUp',
+          text: `CONFIRMED ${conf.timeframe}`,
+          size: 1,
+        });
+
+        newAlerts.push({
+          id: conf.id,
+          time: timeStr,
+          type: 'CONFIRMATION',
+          subtype: `${conf.timeframe} CONFIRMED`,
+          price: conf.sweepPrice.toFixed(2),
+          timestamp: conf.sweepTime
+        });
+      } else if (conf.status === 'Cascading') {
+        newAlerts.push({
+          id: conf.id,
+          time: timeStr,
+          type: 'CASCADING',
+          subtype: `${conf.timeframe} Multiple FVGs (${conf.ifvgCount})`,
+          price: conf.sweepPrice.toFixed(2),
+          timestamp: conf.sweepTime
+        });
+      } else if (conf.status === 'Invalid') {
+        newAlerts.push({
+          id: conf.id,
+          time: timeStr,
+          type: 'INVALID',
+          subtype: `${conf.timeframe} No qualifying FVG`,
+          price: conf.sweepPrice.toFixed(2),
+          timestamp: conf.sweepTime
+        });
+      }
+    });
+
     markersPluginRef.current?.setMarkers(markers.sort((a, b) => (a.time as number) - (b.time as number)));
     
     setTimeout(() => {
       onAlertsUpdate(newAlerts.sort((a, b) => b.timestamp - a.timestamp));
     }, 0);
-  }, [data.ith_itl, data.sweeps, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, timeframe]);
+  }, [data.ith_itl, data.sweeps, data.confirmations, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, timeframe]);
 
   // 6. Handle Reset View
   useEffect(() => {
