@@ -1,4 +1,4 @@
-# ITT - Intermediate Term Trading Analytics
+# Espoir Analytics - Intermediate Term Trading
 
 A premium, real-time trading dashboard designed to visualize Intermediate Term Trading (ITT) concepts for XAUUSD (Gold). Built with an institutional-grade "Black & Silver" aesthetic, this platform automatically detects structural liquidity levels and sweeps across multiple timeframes.
 

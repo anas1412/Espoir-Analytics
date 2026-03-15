@@ -6,7 +6,7 @@ import { LoadingOverlay } from './components/shared/LoadingOverlay';
 import { useMarketData } from './hooks/useMarketData';
 import type { MarketAlert, ChartTheme } from './types';
 
-const SETTINGS_KEY = 'itt_analytics_settings';
+const SETTINGS_KEY = 'espoir_analytics_settings';
 
 export function TradingChart() {
   // Load initial settings from localStorage
