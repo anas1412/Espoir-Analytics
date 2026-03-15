@@ -24,7 +24,6 @@ export function TradingChart() {
   return (
     <div className="flex h-screen bg-[#0b0e14] text-slate-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
       <Sidebar 
-        timeframe={timeframe} setTimeframe={setTimeframe}
         swingLength={swingLength} setSwingLength={setSwingLength}
         lookbackDays={lookbackDays} setLookbackDays={setLookbackDays}
         sweepStart={sweepStart} setSweepStart={setSweepStart}
@@ -36,7 +35,12 @@ export function TradingChart() {
       />
 
       <div className="flex-1 flex flex-col relative bg-[#0b0e14]">
-        <ChartHeader sweepStart={sweepStart} sweepEnd={sweepEnd} />
+        <ChartHeader 
+          sweepStart={sweepStart} 
+          sweepEnd={sweepEnd} 
+          timeframe={timeframe} 
+          setTimeframe={setTimeframe} 
+        />
 
         <div className="flex-1 relative overflow-hidden">
           <LoadingOverlay isLoading={loading} />

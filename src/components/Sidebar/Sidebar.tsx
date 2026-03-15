@@ -5,8 +5,6 @@ import { MarketLogs } from './MarketLogs';
 import type { MarketAlert } from '../../types';
 
 interface SidebarProps {
-  timeframe: string;
-  setTimeframe: (tf: string) => void;
   swingLength: number;
   setSwingLength: (val: number) => void;
   lookbackDays: number;
@@ -45,8 +43,6 @@ export function Sidebar(props: SidebarProps) {
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="p-5 space-y-8">
           <Controls 
-            timeframe={props.timeframe}
-            setTimeframe={props.setTimeframe}
             swingLength={props.swingLength}
             setSwingLength={props.setSwingLength}
             lookbackDays={props.lookbackDays}

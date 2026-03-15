@@ -1,9 +1,6 @@
 import { Settings2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 interface ControlsProps {
-  timeframe: string;
-  setTimeframe: (tf: string) => void;
   swingLength: number;
   setSwingLength: (val: number) => void;
   lookbackDays: number;
@@ -17,7 +14,6 @@ interface ControlsProps {
 }
 
 export function Controls({
-  timeframe, setTimeframe,
   swingLength, setSwingLength,
   lookbackDays, setLookbackDays,
   sweepStart, setSweepStart,
@@ -32,27 +28,6 @@ export function Controls({
       </div>
       
       <div className="space-y-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
-        <div className="space-y-2">
-          <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1">Timeframe</label>
-          <div className="grid grid-cols-4 gap-1.5">
-            {['1m', '3m', '5m', '15m', '30m', '1h', '4h'].map(tf => (
-              <motion.button
-                key={tf}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setTimeframe(tf)}
-                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                  timeframe === tf 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                    : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                }`}
-              >
-                {tf}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-
         <div className="space-y-3">
           <div className="flex justify-between items-end px-1">
             <label className="text-[10px] text-slate-500 font-semibold uppercase">Swing Length</label>
