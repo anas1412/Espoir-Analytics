@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import YahooFinance from 'yahoo-finance2';
 import dotenv from 'dotenv';
-import { calculateFVG, calculateSwingHighsLows, calculateITH_ITL, calculateSweeps, calculateIFVGs, calculateConfirmations, Candle } from './smc';
+import { calculateFVG, calculateSwingHighsLows, calculateITH_ITL, calculateSweeps, calculateIFVGs, calculateConfirmations, Candle, Sweep } from './smc';
 
 dotenv.config();
 
@@ -102,36 +102,85 @@ app.get('/api/gold', async (req, res) => {
     const m3_ohlc = aggregateData(m1_ohlc, 3);
     const m5_ohlc = aggregateData(m1_ohlc, 5);
 
-    // Step 1: Check 1m
-    const m1_fvgs_raw = calculateFVG(m1_ohlc, 0);
-    const m1_ifvgs = calculateIFVGs(m1_ohlc, m1_fvgs_raw);
-    const m1_swings = calculateSwingHighsLows(m1_ohlc, 5);
-    const confirmations = calculateConfirmations(m1_ohlc, sweeps, m1_fvgs_raw, m1_ifvgs, m1_swings, '1m');
+    const checkConfirmationsCascading = (sweepsToProcess: Sweep[], timeframe: string, ohlc_data: Candle[], isStopHuntPass: boolean = false) => {
+      const fvgs_raw = calculateFVG(ohlc_data, 0);
+      const ifvgs = calculateIFVGs(ohlc_data, fvgs_raw);
+      const swings = calculateSwingHighsLows(ohlc_data, 5);
+      return calculateConfirmations(ohlc_data, sweepsToProcess, fvgs_raw, ifvgs, swings, timeframe, isStopHuntPass);
+    };
 
-    // Step 2: Cascade to 3m
-    const cascadingIndicesM3 = confirmations
-      .map((c, i) => c.status === 'Cascading' ? i : -1)
+    // Step 1: Primary Check (1m)
+    const confirmations = checkConfirmationsCascading(sweeps, '1m', m1_ohlc);
+
+    // Step 2: Cascade Primary to 3m/5m
+    const cascadePrimary = async () => {
+      // 3m
+      const cascadingM3 = confirmations.map((c, i) => c.status === 'Cascading' ? i : -1).filter(i => i !== -1);
+      if (cascadingM3.length > 0) {
+        const m3_res = checkConfirmationsCascading(cascadingM3.map(i => sweeps[i]), '3m', m3_ohlc);
+        m3_res.forEach((res, idx) => confirmations[cascadingM3[idx]] = res);
+      }
+      // 5m
+      const cascadingM5 = confirmations.map((c, i) => c.status === 'Cascading' ? i : -1).filter(i => i !== -1);
+      if (cascadingM5.length > 0) {
+        const m5_res = checkConfirmationsCascading(cascadingM5.map(i => sweeps[i]), '5m', m5_ohlc);
+        m5_res.forEach((res, idx) => confirmations[cascadingM5[idx]] = res);
+      }
+    };
+
+    await cascadePrimary();
+
+    // Step 3: Stop Hunt Logic (The 2nd Chance)
+    // For Primary legs that were Violated or Invalid (0 FVGs)
+    const huntableIndices = confirmations
+      .map((c, i) => (c.status === 'Violated' || (c.status === 'Invalid' && c.ifvgCount === 0)) ? i : -1)
       .filter(i => i !== -1);
 
-    if (cascadingIndicesM3.length > 0) {
-      const m3_fvgs_raw = calculateFVG(m3_ohlc, 0);
-      const m3_ifvgs = calculateIFVGs(m3_ohlc, m3_fvgs_raw);
-      const m3_swings = calculateSwingHighsLows(m3_ohlc, 5);
-      const m3_results = calculateConfirmations(m3_ohlc, cascadingIndicesM3.map(i => sweeps[i]), m3_fvgs_raw, m3_ifvgs, m3_swings, '3m');
-      m3_results.forEach((res, idx) => confirmations[cascadingIndicesM3[idx]] = res);
-    }
+    if (huntableIndices.length > 0) {
+      for (const idx of huntableIndices) {
+        const primary = confirmations[idx];
+        const isITH = primary.type === 1;
 
-    // Step 3: Cascade to 5m
-    const cascadingIndicesM5 = confirmations
-      .map((c, i) => c.status === 'Cascading' ? i : -1)
-      .filter(i => i !== -1);
+        // Find Second Sweep: price must sweep the Primary Leg Extreme
+        let secondSweep: Sweep | null = null;
+        for (let i = primary.legEndIndex + 1; i < m1_ohlc.length; i++) {
+          const c = m1_ohlc[i];
+          const swept = isITH ? (c.high > primary.extremePrice) : (c.low < primary.extremePrice);
+          if (swept) {
+            secondSweep = {
+              index: i,
+              time: c.time as number,
+              type: primary.type,
+              level: primary.extremePrice,
+              sourceIndex: primary.legEndIndex, // New leg starts from old extreme
+              timeframe: '1m'
+            };
+            break;
+          }
+        }
 
-    if (cascadingIndicesM5.length > 0) {
-      const m5_fvgs_raw = calculateFVG(m5_ohlc, 0);
-      const m5_ifvgs = calculateIFVGs(m5_ohlc, m5_fvgs_raw);
-      const m5_swings = calculateSwingHighsLows(m5_ohlc, 5);
-      const m5_results = calculateConfirmations(m5_ohlc, cascadingIndicesM5.map(i => sweeps[i]), m5_fvgs_raw, m5_ifvgs, m5_swings, '5m');
-      m5_results.forEach((res, idx) => confirmations[cascadingIndicesM5[idx]] = res);
+        if (secondSweep) {
+          // Found a Second Sweep! Now check 1m for this SH leg
+          let sh_res = checkConfirmationsCascading([secondSweep], '1m', m1_ohlc, true)[0];
+          
+          // Cascade SH leg to 3m
+          if (sh_res.status === 'Cascading') {
+            sh_res = checkConfirmationsCascading([secondSweep], '3m', m3_ohlc, true)[0];
+          }
+          // Cascade SH leg to 5m
+          if (sh_res.status === 'Cascading') {
+            sh_res = checkConfirmationsCascading([secondSweep], '5m', m5_ohlc, true)[0];
+          }
+
+          if (sh_res.status === 'Confirmed') {
+            // If Stop Hunt is confirmed, it replaces the primary invalidation
+            confirmations[idx] = sh_res;
+          } else {
+            // Keep it as Hunting or Violated to show in logs
+            confirmations[idx].status = 'Hunting';
+          }
+        }
+      }
     }
 
     console.log(`[API] Returning ${ohlc.length} candles, ${sweeps.length} sweeps, ${confirmations.filter(c => c.status === 'Confirmed').length} confirmed`);

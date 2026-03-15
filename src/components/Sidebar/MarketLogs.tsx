@@ -54,8 +54,10 @@ export function MarketLogs({ alerts, error, loading }: MarketLogsProps) {
                     ? 'bg-emerald-900/20 border-emerald-500/40 hover:border-emerald-500'
                     : alert.type === 'CASCADING'
                     ? 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
-                    : alert.type === 'INVALID'
+                    : alert.type === 'INVALID' || alert.type === 'VIOLATED'
                     ? 'bg-zinc-950/50 border-zinc-900 opacity-60 hover:opacity-100'
+                    : alert.type === 'STOP_HUNT'
+                    ? 'bg-amber-900/10 border-amber-500/30 hover:border-amber-500'
                     : alert.type === 'SWEEP' 
                     ? 'bg-amber-900/10 border-amber-500/30 hover:border-amber-500' 
                     : 'bg-zinc-950 border-zinc-900 hover:border-zinc-800'
@@ -66,7 +68,8 @@ export function MarketLogs({ alerts, error, loading }: MarketLogsProps) {
                     <span className={`text-[10px] font-black uppercase tracking-widest ${
                       alert.type === 'CONFIRMATION' ? 'text-emerald-400' :
                       alert.type === 'CASCADING' ? 'text-zinc-400' :
-                      alert.type === 'INVALID' ? 'text-zinc-600' :
+                      alert.type === 'INVALID' || alert.type === 'VIOLATED' ? 'text-zinc-600' :
+                      alert.type === 'STOP_HUNT' ? 'text-amber-400' :
                       alert.type === 'SWEEP' ? 'text-amber-400' :
                       alert.type === 'ITH' ? 'text-rose-500' : 
                       'text-emerald-500'

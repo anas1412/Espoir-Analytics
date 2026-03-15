@@ -55,13 +55,16 @@ export interface Confirmation {
   id: string;
   type: 1 | -1; // 1 for Sweep of ITH (Short Reversal), -1 for Sweep of ITL (Long Reversal)
   timeframe: string;
-  status: 'Confirmed' | 'Invalid' | 'Cascading';
+  status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated' | 'Hunting';
+  legType: 'Primary' | 'StopHunt';
   sweepTime: number;
   sweepPrice: number;
   ifvgCount: number;
   ifvg?: IFVG;
   legStartIndex: number;
   legEndIndex: number;
+  extremePrice: number;
+  violationIndex?: number;
 }
 
 export function calculateFVG(ohlc: Candle[], minFvgRatio: number = 0): FVG[] {
@@ -328,7 +331,8 @@ export function calculateConfirmations(
   fvgs: FVG[],
   ifvgs: IFVG[],
   swings: Swing[],
-  timeframe: string
+  timeframe: string,
+  isStopHuntPass: boolean = false
 ): Confirmation[] {
   const confirmations: Confirmation[] = [];
 
@@ -337,6 +341,7 @@ export function calculateConfirmations(
     let legStartIndex = sweep.sourceIndex;
     const isITH = sweep.type === 1;
 
+    // Recalculate based on current timeframe swings
     for (let i = swings.length - 1; i >= 0; i--) {
       const s = swings[i];
       if (s.index < sweep.index && s.index > sweep.sourceIndex) {
@@ -350,33 +355,54 @@ export function calculateConfirmations(
       }
     }
 
-    // 2. Count ALL FVGs in the leg
+    // 2. Identify Leg Extreme
+    let extremePrice = isITH ? -Infinity : Infinity;
+    for (let i = legStartIndex; i <= sweep.index; i++) {
+      if (isITH) {
+        if (ohlc[i].high > extremePrice) extremePrice = ohlc[i].high;
+      } else {
+        if (ohlc[i].low < extremePrice) extremePrice = ohlc[i].low;
+      }
+    }
+
+    // 3. Count ALL FVGs in the leg
     const legFVGs = fvgs.filter(fvg => 
       fvg.index >= legStartIndex && 
       fvg.index <= sweep.index &&
       (isITH ? fvg.direction === 1 : fvg.direction === -1)
     );
 
-    let status: 'Confirmed' | 'Invalid' | 'Cascading' = 'Invalid';
+    let status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated' | 'Hunting' = 'Invalid';
     let confirmedIFVG: IFVG | undefined = undefined;
+    let violationIndex: number | undefined = undefined;
 
     if (legFVGs.length === 0) {
       status = 'Invalid';
     } else if (legFVGs.length > 1) {
       status = 'Cascading';
     } else if (legFVGs.length === 1) {
-      // 3. Singular FVG found. Now check for Inversion.
       const targetFVG = legFVGs[0];
       const inversion = ifvgs.find(ifvg => 
         ifvg.index === targetFVG.index && 
         ifvg.inversionIndex >= sweep.index
       );
 
-      if (inversion) {
-        status = 'Confirmed';
-        confirmedIFVG = inversion;
-      } else {
-        status = 'Invalid';
+      // Check for Violation BEFORE inversion
+      for (let i = sweep.index + 1; i < ohlc.length; i++) {
+        const c = ohlc[i];
+        const violated = isITH ? (c.high > extremePrice) : (c.low < extremePrice);
+        const inverted = inversion && i >= inversion.inversionIndex;
+
+        if (violated && (!inverted || i < (inversion?.inversionIndex ?? 0))) {
+          status = 'Violated';
+          violationIndex = i;
+          break;
+        }
+        if (inverted) {
+          status = 'Confirmed';
+          confirmedIFVG = inversion;
+          break;
+        }
       }
     }
 
@@ -387,16 +413,19 @@ export function calculateConfirmations(
     }
 
     confirmations.push({
-      id: `${sweep.time}-${timeframe}-${isITH ? 'Short' : 'Long'}`,
+      id: `${sweep.time}-${timeframe}-${isITH ? 'Short' : 'Long'}${isStopHuntPass ? '-SH' : ''}`,
       type: isITH ? 1 : -1,
       timeframe,
       status,
+      legType: isStopHuntPass ? 'StopHunt' : 'Primary',
       sweepTime: sweep.time,
       sweepPrice: sweep.level,
       ifvgCount: legFVGs.length,
       ifvg: confirmedIFVG,
       legStartIndex,
-      legEndIndex: sweep.index
+      legEndIndex: sweep.index,
+      extremePrice,
+      violationIndex
     });
   }
 

@@ -352,10 +352,11 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       });
     });
 
-    // 2. Handle Confirmations (Confirmed, Invalid, Cascading)
+    // 2. Handle Confirmations (Confirmed, Invalid, Cascading, Violated, Hunting)
     const confirmations = data.confirmations || [];
     confirmations.forEach((conf) => {
       const isShort = conf.type === 1;
+      const isSH = conf.legType === 'StopHunt';
       const timeStr = new Date(conf.sweepTime * 1000).toLocaleString();
       
       if (conf.status === 'Confirmed' && conf.ifvg) {
@@ -367,7 +368,7 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           const s = chartRef.current.addSeries(LineSeries, {
             color: boxColor,
             lineWidth: 2,
-            lineStyle: 0, // Solid
+            lineStyle: isSH ? 2 : 0, // Dashed for Stop Hunt iFVG
             priceLineVisible: false,
             lastValueVisible: false,
             crosshairMarkerVisible: false,
@@ -384,13 +385,12 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
         createBoxLine(conf.ifvg.bottom);
 
         // Add "CONFIRMED" marker
-        const shLabel = conf.isStopHunt ? ` (SH ${conf.stopHuntCount})` : '';
         markers.push({
           time: conf.ifvg.inversionTime as any,
           position: isShort ? 'belowBar' : 'aboveBar',
           color: boxColor,
           shape: 'arrowUp',
-          text: `CONFIRMED ${conf.timeframe}${shLabel}`,
+          text: `${isSH ? 'SH ' : ''}CONFIRMED ${conf.timeframe}`,
           size: 1,
         });
 
@@ -398,28 +398,44 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           id: conf.id,
           time: timeStr,
           type: 'CONFIRMATION',
-          subtype: `${conf.timeframe} CONFIRMED${shLabel}`,
+          subtype: `${conf.timeframe} ${isSH ? 'SH ' : ''}CONFIRMED`,
           price: conf.sweepPrice.toFixed(2),
           timestamp: conf.sweepTime
         });
       } else if (conf.status === 'Cascading') {
-        const shLabel = conf.isStopHunt ? ` (SH ${conf.stopHuntCount})` : '';
         newAlerts.push({
           id: conf.id,
           time: timeStr,
           type: 'CASCADING',
-          subtype: `${conf.timeframe} Multi FVGs (${conf.ifvgCount})${shLabel}`,
+          subtype: `${conf.timeframe} Multi FVGs (${conf.ifvgCount})${isSH ? ' SH' : ''}`,
+          price: conf.sweepPrice.toFixed(2),
+          timestamp: conf.sweepTime
+        });
+      } else if (conf.status === 'Violated') {
+        newAlerts.push({
+          id: conf.id,
+          time: timeStr,
+          type: 'VIOLATED',
+          subtype: `${conf.timeframe} Extreme Violated`,
+          price: conf.sweepPrice.toFixed(2),
+          timestamp: conf.sweepTime
+        });
+      } else if (conf.status === 'Hunting') {
+        newAlerts.push({
+          id: conf.id,
+          time: timeStr,
+          type: 'STOP_HUNT',
+          subtype: `${conf.timeframe} Hunting 2nd Chance`,
           price: conf.sweepPrice.toFixed(2),
           timestamp: conf.sweepTime
         });
       } else if (conf.status === 'Invalid') {
-        const shLabel = conf.isStopHunt ? ` (SH ${conf.stopHuntCount})` : '';
-        const reason = conf.ifvgCount === 0 ? 'No qualifying FVG' : 'Extreme Violated';
+        const reason = conf.ifvgCount === 0 ? 'No qualifying FVG' : 'Expired';
         newAlerts.push({
           id: conf.id,
           time: timeStr,
           type: 'INVALID',
-          subtype: `${conf.timeframe} ${reason}${shLabel}`,
+          subtype: `${conf.timeframe} ${reason}${isSH ? ' SH' : ''}`,
           price: conf.sweepPrice.toFixed(2),
           timestamp: conf.sweepTime
         });

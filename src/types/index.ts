@@ -42,16 +42,16 @@ export interface Confirmation {
   id: string;
   type: 1 | -1;
   timeframe: string;
-  status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated';
+  status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated' | 'Hunting';
+  legType: 'Primary' | 'StopHunt';
   sweepTime: number;
   sweepPrice: number;
   ifvgCount: number;
   ifvg?: IFVG;
   legStartIndex: number;
   legEndIndex: number;
-  isStopHunt?: boolean;
-  stopHuntCount?: number;
-  violationTime?: number;
+  extremePrice: number;
+  violationIndex?: number;
 }
 
 export interface ChartData {
@@ -64,7 +64,7 @@ export interface ChartData {
 export interface MarketAlert {
   id: string;
   time: string;
-  type: 'ITH' | 'ITL' | 'SWEEP' | 'CONFIRMATION' | 'CASCADING' | 'INVALID';
+  type: 'ITH' | 'ITL' | 'SWEEP' | 'CONFIRMATION' | 'CASCADING' | 'INVALID' | 'VIOLATED' | 'STOP_HUNT';
   subtype: string;
   price: string;
   timestamp: number;
