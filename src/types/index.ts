@@ -42,7 +42,7 @@ export interface Confirmation {
   id: string;
   type: 1 | -1;
   timeframe: string;
-  status: 'Confirmed' | 'Invalid' | 'Cascading';
+  status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated';
   sweepTime: number;
   sweepPrice: number;
   ifvgCount: number;
