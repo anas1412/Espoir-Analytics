@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { ChartHeader } from './components/Chart/ChartHeader';
 import { ChartArea } from './components/Chart/ChartArea';
@@ -6,32 +6,81 @@ import { LoadingOverlay } from './components/shared/LoadingOverlay';
 import { useMarketData } from './hooks/useMarketData';
 import type { MarketAlert, ChartTheme } from './types';
 
+const SETTINGS_KEY = 'itt_analytics_settings';
+
 export function TradingChart() {
-  const [timeframe, setTimeframe] = useState('15m');
-  const [swingLength, setSwingLength] = useState(5);
-  const [lookbackDays, setLookbackDays] = useState(3);
-  const [sweepStart, setSweepStart] = useState('07:00');
-  const [sweepEnd, setSweepEnd] = useState('22:00');
-  const [filterSweepsByWindow, setFilterSweepsByWindow] = useState(true);
-  const [showMtf, setShowMtf] = useState(false);
-  const [strictMode, setStrictMode] = useState(false);
-  const [minFvgRatio, setMinFvgRatio] = useState(0.1);
-  const [levelExpiryDays, setLevelExpiryDays] = useState(3);
-  const [showSweeps, setShowSweeps] = useState(true);
-  const [showSessions, setShowSessions] = useState(true);
-  const [showDayDividers, setShowDayDividers] = useState(true);
-  const [londonColor, setLondonColor] = useState('#38bdf8');
-  const [nyColor, setNyColor] = useState('#22c55e');
-  const [selectedMtfTfs, setSelectedMtfTfs] = useState(['5m', '15m', '30m', '1h', '4h']);
+  // Load initial settings from localStorage
+  const loadInitialSettings = () => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to load settings', e);
+    }
+    return null;
+  };
+
+  const initialSettings = loadInitialSettings();
+
+  const [timeframe, setTimeframe] = useState(initialSettings?.timeframe || '15m');
+  const [swingLength, setSwingLength] = useState(initialSettings?.swingLength ?? 5);
+  const [lookbackDays, setLookbackDays] = useState(initialSettings?.lookbackDays ?? 3);
+  const [sweepStart, setSweepStart] = useState(initialSettings?.sweepStart || '07:00');
+  const [sweepEnd, setSweepEnd] = useState(initialSettings?.sweepEnd || '22:00');
+  const [filterSweepsByWindow, setFilterSweepsByWindow] = useState(initialSettings?.filterSweepsByWindow ?? true);
+  const [showMtf, setShowMtf] = useState(initialSettings?.showMtf ?? false);
+  const [strictMode, setStrictMode] = useState(initialSettings?.strictMode ?? false);
+  const [minFvgRatio, setMinFvgRatio] = useState(initialSettings?.minFvgRatio ?? 0.1);
+  const [levelExpiryDays, setLevelExpiryDays] = useState(initialSettings?.levelExpiryDays ?? 3);
+  const [showSweeps, setShowSweeps] = useState(initialSettings?.showSweeps ?? true);
+  const [showSessions, setShowSessions] = useState(initialSettings?.showSessions ?? true);
+  const [showDayDividers, setShowDayDividers] = useState(initialSettings?.showDayDividers ?? true);
+  const [londonColor, setLondonColor] = useState(initialSettings?.londonColor || '#38bdf8');
+  const [nyColor, setNyColor] = useState(initialSettings?.nyColor || '#22c55e');
+  const [sessionOpacity, setSessionOpacity] = useState(initialSettings?.sessionOpacity ?? 0.08);
+  const [selectedMtfTfs, setSelectedMtfTfs] = useState<string[]>(initialSettings?.selectedMtfTfs || ['5m', '15m', '30m', '1h', '4h']);
+  const [selectedThemeKey, setSelectedThemeKey] = useState(initialSettings?.selectedThemeKey || 'default');
+  
   const [alerts, setAlerts] = useState<MarketAlert[]>([]);
   const [resetCounter, setResetCounter] = useState(0);
-  const [theme, setTheme] = useState<ChartTheme>({
+  const [theme, setTheme] = useState<ChartTheme>(initialSettings?.theme || {
     upColor: '#10b981',
     downColor: '#f43f5e',
     backgroundColor: '#000000',
     gridColor: '#0f0f0f',
     textColor: '#71717a',
+    wickColor: '#71717a',
+    borderColor: '#71717a',
   });
+
+  const saveTimeoutRef = useRef<any>(null);
+
+  // Smart Debounced Auto-Save
+  useEffect(() => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    saveTimeoutRef.current = setTimeout(() => {
+      const settings = {
+        timeframe, swingLength, lookbackDays, sweepStart, sweepEnd,
+        filterSweepsByWindow, showMtf, strictMode, minFvgRatio,
+        levelExpiryDays, showSweeps, showSessions, showDayDividers,
+        londonColor, nyColor, sessionOpacity, selectedMtfTfs,
+        selectedThemeKey, theme
+      };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      console.log('[Dashboard] Settings auto-saved');
+    }, 1000); // 1s debounce for stability
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [
+    timeframe, swingLength, lookbackDays, sweepStart, sweepEnd,
+    filterSweepsByWindow, showMtf, strictMode, minFvgRatio,
+    levelExpiryDays, showSweeps, showSessions, showDayDividers,
+    londonColor, nyColor, sessionOpacity, selectedMtfTfs,
+    selectedThemeKey, theme
+  ]);
 
   const { data, loading, error } = useMarketData({ 
     timeframe, 
@@ -69,7 +118,9 @@ export function TradingChart() {
         showDayDividers={showDayDividers} setShowDayDividers={setShowDayDividers}
         londonColor={londonColor} setLondonColor={setLondonColor}
         nyColor={nyColor} setNyColor={setNyColor}
+        sessionOpacity={sessionOpacity} setSessionOpacity={setSessionOpacity}
         theme={theme} setTheme={setTheme}
+        selectedThemeKey={selectedThemeKey} setSelectedThemeKey={setSelectedThemeKey}
         alerts={alerts}
         error={error}
         loading={loading}
@@ -100,6 +151,7 @@ export function TradingChart() {
             showDayDividers={showDayDividers}
             londonColor={londonColor}
             nyColor={nyColor}
+            sessionOpacity={sessionOpacity}
             theme={theme}
           />
         </div>

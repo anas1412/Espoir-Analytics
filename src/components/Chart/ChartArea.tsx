@@ -18,10 +18,11 @@ interface ChartAreaProps {
   showDayDividers: boolean;
   londonColor: string;
   nyColor: string;
+  sessionOpacity: number;
   theme: ChartTheme;
 }
 
-export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor, theme }: ChartAreaProps) {
+export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor, sessionOpacity, theme }: ChartAreaProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -67,18 +68,39 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     const series = chart.addSeries(CandlestickSeries, {
       upColor: theme.upColor,
       downColor: theme.downColor,
-      borderVisible: false,
+      borderVisible: true,
+      wickVisible: true,
+      borderColor: theme.borderColor,
+      wickColor: theme.wickColor,
       wickUpColor: theme.upColor,
       wickDownColor: theme.downColor,
     });
     seriesRef.current = series;
     markersPluginRef.current = createSeriesMarkers(series);
 
+    // Initial Theme Sync
+    chart.applyOptions({
+      layout: {
+        background: { color: theme.backgroundColor },
+        textColor: theme.textColor,
+      },
+      grid: {
+        vertLines: { color: theme.gridColor },
+        horzLines: { color: theme.gridColor },
+      },
+      timeScale: {
+        borderColor: theme.gridColor,
+      },
+      rightPriceScale: {
+        borderColor: theme.gridColor,
+      }
+    });
+
     // Create Session Series
     sessionSeriesRef.current = [];
     SESSIONS.forEach((session) => {
       const sessSeries = chart.addSeries(HistogramSeries, {
-        color: 'rgba(0,0,0,0)',
+        color: 'transparent',
         priceFormat: { type: 'volume' },
         priceScaleId: 'sessions',
         base: 0,
@@ -92,7 +114,7 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
 
     // Create Divider Series
     dividerSeriesRef.current = chart.addSeries(HistogramSeries, {
-      color: 'rgba(113, 113, 122, 0.2)',
+      color: '#71717a33',
       priceFormat: { type: 'volume' },
       priceScaleId: 'dividers',
       base: 0,
@@ -130,6 +152,11 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
         series.setData([]);
         return;
       }
+      
+      const hex = config.name === 'London' ? londonColor : nyColor;
+      const alphaHex = Math.round(sessionOpacity * 255).toString(16).padStart(2, '0');
+      series.applyOptions({ color: `${hex}${alphaHex}` });
+
       const sessionData = ohlc.map(c => ({
         time: c.time,
         value: isInSession(c.time as number, config.start, config.end) ? 1 : 0,
@@ -189,6 +216,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     seriesRef.current.applyOptions({
       upColor: theme.upColor,
       downColor: theme.downColor,
+      borderColor: theme.borderColor,
+      wickColor: theme.wickColor,
       wickUpColor: theme.upColor,
       wickDownColor: theme.downColor,
     });
@@ -200,12 +229,10 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
 
     sessionSeriesRef.current.forEach(({ series, config }) => {
       const hex = config.name === 'London' ? londonColor : nyColor;
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      series.applyOptions({ color: `rgba(${r}, ${g}, ${b}, 0.08)` });
+      const alphaHex = Math.round(sessionOpacity * 255).toString(16).padStart(2, '0');
+      series.applyOptions({ color: `${hex}${alphaHex}` });
     });
-  }, [londonColor, nyColor]);
+  }, [londonColor, nyColor, sessionOpacity]);
 
   // 5. Markers & Alerts Update
   useEffect(() => {
@@ -260,7 +287,7 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       const tfPrefix = signal.timeframe ? `[${signal.timeframe}] ` : '';
 
       // Create Ray Series
-      const rayColor = isITH ? 'rgba(244, 63, 94, 0.6)' : 'rgba(16, 185, 129, 0.6)';
+      const rayColor = isITH ? '#f43f5e99' : '#10b98199';
       const raySeries = chartRef.current.addSeries(LineSeries, {
         color: rayColor,
         lineWidth: 1,

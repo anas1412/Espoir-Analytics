@@ -49,4 +49,6 @@ export interface ChartTheme {
   backgroundColor: string;
   gridColor: string;
   textColor: string;
+  wickColor: string;
+  borderColor: string;
 }

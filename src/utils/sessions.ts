@@ -6,8 +6,8 @@ export interface Session {
 }
 
 export const SESSIONS: Session[] = [
-  { name: 'London', start: '08:00', end: '17:00', color: 'rgba(56, 189, 248, 0.08)' }, // Soft Blue
-  { name: 'New York', start: '13:00', end: '22:00', color: 'rgba(34, 197, 94, 0.08)' }, // Soft Green
+  { name: 'London', start: '08:00', end: '17:00', color: '#38bdf8' }, // Soft Blue
+  { name: 'New York', start: '13:00', end: '22:00', color: '#22c55e' }, // Soft Green
 ];
 
 // Returns true if current time is within HH:mm window
