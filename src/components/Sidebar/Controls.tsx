@@ -81,6 +81,7 @@ export function Controls({
               max="30" 
               value={lookbackDays}
               onChange={(e) => setLookbackDays(parseInt(e.target.value))}
+              style={{ colorScheme: 'dark' }}
               className="w-full bg-zinc-900 border border-zinc-800 group-hover:border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-400 transition-all font-mono"
             />
             <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500 font-bold uppercase pointer-events-none">Days</span>

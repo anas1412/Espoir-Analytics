@@ -39,7 +39,7 @@ export function Sidebar(props: SidebarProps) {
     >
       <div className="p-6 border-b border-zinc-900">
         <div className="flex items-center space-x-3 mb-6">
-          <div className="p-2 bg-zinc-800 rounded-md border border-zinc-700 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+          <div className="p-2 bg-zinc-900 rounded-md border border-zinc-800 shadow-[0_0_15px_rgba(255,255,255,0.02)]">
             <TrendingUp size={18} className="text-zinc-100" />
           </div>
           <div>
@@ -75,7 +75,7 @@ export function Sidebar(props: SidebarProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+      <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative">
         <AnimatePresence mode="wait">
           {activeTab === 'settings' && (
             <motion.div

@@ -9,6 +9,7 @@ This dashboard is designed to execute a highly specific, multi-timeframe structu
 1. **Identify Liquidity:** The system constantly scans for **ITH** (Intermediate Term Highs) and **ITL** (Intermediate Term Lows).
 2. **Wait for the Sweep:** We wait for price to break through (sweep) an established ITH or ITL.
 3. **Seek Confirmation (The iFVG Check):** After a sweep, we look inside the "manipulation leg" for a singular **Inversion Fair Value Gap (iFVG)** to confirm the reversal.
+   * **The Stop Hunt Scenario:** If no iFVG confirmation appears after the initial sweep, we wait. If the price then sweeps the newly formed swing extreme (a second sweep), this is called a **Stop Hunt**. If our singular iFVG confirmation appears inside the manipulation leg of this *second* sweep, the trade becomes valid.
 4. **Timeframe Cascading (1m  3m  5m):**
    * We first check the **1-minute (1m)** chart. If there is exactly *one* iFVG, we take the trade. If there are *zero*, there is no trade.
    * If there are *multiple* iFVGs on the 1m, we scale up to the **3-minute (3m)** chart. If there is exactly one iFVG, we trade.
@@ -31,6 +32,7 @@ If you are new to Smart Money Concepts (SMC) and Intermediate Term Trading (ITT)
   * **Internal ITL:** Forms on lower timeframes (under 5 minutes).
   * **External ITL:** Forms on higher timeframes (5 minutes or higher).
 * **Manipulation Leg:** The aggressive, fast price move that sweeps the ITH or ITL liquidity before reversing. It is the specific "trap" set by smart money, and we look for our iFVG confirmation inside this specific leg.
+* **Stop Hunt:** A secondary sweep that occurs when an initial sweep fails to provide an iFVG confirmation. It sweeps the extreme of the recent manipulation leg, acting as a final trap before the real reversal. A valid confirmation here reinstates the trade setup.
 
 ---
 
