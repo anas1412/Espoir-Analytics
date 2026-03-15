@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { createChart, CrosshairMode, type ISeriesApi, type SeriesMarker, type Time, CandlestickSeries, createSeriesMarkers, HistogramSeries } from 'lightweight-charts';
 import type { ChartData, MarketAlert } from '../../types';
-import { isTimeInWindow } from '../../utils/time';
+import { isTimeInWindow, timeframeToSeconds } from '../../utils/time';
 import { SESSIONS, isInSession, isNewDay } from '../../utils/sessions';
 
 interface ChartAreaProps {
   data: ChartData;
+  timeframe: string;
   lookbackDays: number;
   sweepStart: string;
   sweepEnd: string;
@@ -18,7 +19,7 @@ interface ChartAreaProps {
   nyColor: string;
 }
 
-export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor }: ChartAreaProps) {
+export function ChartArea({ data, timeframe, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor }: ChartAreaProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -177,15 +178,32 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSwee
     const ohlc = data.ohlc;
     const lookbackTimestamp = Math.floor(Date.now() / 1000) - (lookbackDays * 86400);
 
+    const pinpointTime = (signalTime: number, signalLevel: number, signalTf: string | undefined, type: 1 | -1): number => {
+      if (!signalTf || signalTf === timeframe) return signalTime;
+      
+      const tfSeconds = timeframeToSeconds(signalTf);
+      const endTime = signalTime + tfSeconds;
+      
+      const matchingCandle = ohlc.find(c => {
+        const t = c.time as number;
+        if (t < signalTime || t >= endTime) return false;
+        return type === 1 ? c.high === signalLevel : c.low === signalLevel;
+      });
+      
+      return matchingCandle ? (matchingCandle.time as number) : signalTime;
+    };
+
     const markers: SeriesMarker<Time>[] = [];
     const newAlerts: MarketAlert[] = [];
     const signals = data.ith_itl || [];
     
     signals.forEach((signal) => {
-      let matchingCandle = ohlc.find(c => c.time === signal.time);
+      const preciseTime = pinpointTime(signal.time, signal.level, signal.timeframe, signal.type);
+      let matchingCandle = ohlc.find(c => c.time === preciseTime);
+      
       if (!matchingCandle) {
         for(let i = ohlc.length - 1; i >= 0; i--) {
-           if ((ohlc[i].time as number) <= signal.time) {
+           if ((ohlc[i].time as number) <= preciseTime) {
               matchingCandle = ohlc[i];
               break;
            }
@@ -223,10 +241,12 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSwee
 
     const sweeps = data.sweeps || [];
     sweeps.forEach((sweep) => {
-      let matchingCandle = ohlc.find(c => c.time === sweep.time);
+      const preciseTime = pinpointTime(sweep.time, sweep.level, sweep.timeframe, sweep.type);
+      let matchingCandle = ohlc.find(c => c.time === preciseTime);
+      
       if (!matchingCandle) {
         for(let i = ohlc.length - 1; i >= 0; i--) {
-           if ((ohlc[i].time as number) <= sweep.time) {
+           if ((ohlc[i].time as number) <= preciseTime) {
               matchingCandle = ohlc[i];
               break;
            }
@@ -270,7 +290,7 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSwee
     setTimeout(() => {
       onAlertsUpdate(newAlerts.sort((a, b) => b.timestamp - a.timestamp));
     }, 0);
-  }, [data.ith_itl, data.sweeps, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate]);
+  }, [data.ith_itl, data.sweeps, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, timeframe]);
 
   // 5. Handle Reset View
   useEffect(() => {

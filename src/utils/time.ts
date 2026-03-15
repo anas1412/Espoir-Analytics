@@ -16,3 +16,17 @@ export const isTimeInWindow = (time: number, startStr: string, endStr: string): 
   // Handles overnight windows (e.g. 22:00 to 07:00)
   return currentMins >= startMins || currentMins <= endMins;
 };
+
+export const timeframeToSeconds = (tf: string): number => {
+  const match = tf.match(/^(\d+)([mhd])$/);
+  if (!match) return 900; // Default to 15m
+  const val = parseInt(match[1]);
+  const unit = match[2];
+  
+  switch (unit) {
+    case 'm': return val * 60;
+    case 'h': return val * 3600;
+    case 'd': return val * 86400;
+    default: return 900;
+  }
+};

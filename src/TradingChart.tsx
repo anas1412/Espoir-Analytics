@@ -78,6 +78,7 @@ export function TradingChart() {
           <LoadingOverlay isLoading={loading} />
           <ChartArea 
             data={data}
+            timeframe={timeframe}
             lookbackDays={lookbackDays}
             sweepStart={sweepStart}
             sweepEnd={sweepEnd}
