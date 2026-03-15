@@ -6,9 +6,10 @@ interface UseMarketDataParams {
   swingLength: number;
   showMtf: boolean;
   strictMode: boolean;
+  minFvgRatio: number;
 }
 
-export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode }: UseMarketDataParams) => {
+export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, minFvgRatio }: UseMarketDataParams) => {
   const [data, setData] = useState<ChartData>({ ohlc: [], ith_itl: [], sweeps: [] });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,11 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode }: U
       setLoading(true);
       setError(null);
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      console.log(`Fetching: timeframe=${timeframe}, swingLength=${swingLength}, strictMode=${strictMode}`);
+      console.log(`Fetching: timeframe=${timeframe}, swingLength=${swingLength}, strictMode=${strictMode}, minFvgRatio=${minFvgRatio}`);
       
       try {
         if (!showMtf) {
-          const res = await fetch(`${apiUrl}/api/gold?timeframe=${timeframe}&range=30d&swingLength=${swingLength}&strictMode=${strictMode}`);
+          const res = await fetch(`${apiUrl}/api/gold?timeframe=${timeframe}&range=30d&swingLength=${swingLength}&strictMode=${strictMode}&minFvgRatio=${minFvgRatio}`);
           const result = await res.json();
           
           if (!isMounted) return;
@@ -38,7 +39,7 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode }: U
         } else {
           const allTfs = ['1m', '3m', '5m', '15m', '30m', '1h', '4h'];
           const fetchTf = async (tf: string) => {
-             const response = await fetch(`${apiUrl}/api/gold?timeframe=${tf}&range=30d&swingLength=${swingLength}&strictMode=${strictMode}`);
+             const response = await fetch(`${apiUrl}/api/gold?timeframe=${tf}&range=30d&swingLength=${swingLength}&strictMode=${strictMode}&minFvgRatio=${minFvgRatio}`);
              const json = await response.json();
              // Append timeframe property to signals
              // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,7 +94,7 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode }: U
     return () => {
       isMounted = false;
     };
-  }, [timeframe, swingLength, showMtf, strictMode]);
+  }, [timeframe, swingLength, showMtf, strictMode, minFvgRatio]);
 
   return { data, loading, error };
 };

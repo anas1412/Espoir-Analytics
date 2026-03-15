@@ -13,6 +13,8 @@ interface ControlsProps {
   setShowMtf: (val: boolean) => void;
   strictMode: boolean;
   setStrictMode: (val: boolean) => void;
+  minFvgRatio: number;
+  setMinFvgRatio: (val: number) => void;
 }
 
 export function Controls({
@@ -21,7 +23,8 @@ export function Controls({
   sweepStart, setSweepStart,
   sweepEnd, setSweepEnd,
   showMtf, setShowMtf,
-  strictMode, setStrictMode
+  strictMode, setStrictMode,
+  minFvgRatio, setMinFvgRatio
 }: ControlsProps) {
   return (
     <section className="space-y-5">
@@ -42,6 +45,22 @@ export function Controls({
             max="50" 
             value={swingLength}
             onChange={(e) => setSwingLength(parseInt(e.target.value))}
+            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all"
+          />
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex justify-between items-end px-1">
+            <label className="text-[10px] text-slate-500 font-semibold uppercase">Min FVG Size (%)</label>
+            <span className="text-indigo-400 font-mono text-sm font-bold">{(minFvgRatio * 100).toFixed(0)}%</span>
+          </div>
+          <input 
+            type="range" 
+            min="0" 
+            max="1" 
+            step="0.05"
+            value={minFvgRatio}
+            onChange={(e) => setMinFvgRatio(parseFloat(e.target.value))}
             className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all"
           />
         </div>

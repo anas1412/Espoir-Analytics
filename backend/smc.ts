@@ -39,7 +39,7 @@ export interface Sweep {
   timeframe?: string;
 }
 
-export function calculateFVG(ohlc: Candle[]): FVG[] {
+export function calculateFVG(ohlc: Candle[], minFvgRatio: number = 0): FVG[] {
   const fvgs: FVG[] = [];
   
   for (let i = 1; i < ohlc.length - 1; i++) {
@@ -49,23 +49,35 @@ export function calculateFVG(ohlc: Candle[]): FVG[] {
     
     // Bullish FVG
     if (prev.high < next.low && curr.close > curr.open) {
-      fvgs.push({
-        index: i,
-        direction: 1,
-        top: next.low,
-        bottom: prev.high,
-        mitigatedIndex: null
-      });
+      const gapSize = next.low - prev.high;
+      const candleSize = curr.high - curr.low;
+      const ratio = candleSize === 0 ? 0 : gapSize / candleSize;
+      
+      if (ratio >= minFvgRatio) {
+        fvgs.push({
+          index: i,
+          direction: 1,
+          top: next.low,
+          bottom: prev.high,
+          mitigatedIndex: null
+        });
+      }
     }
     // Bearish FVG
     else if (prev.low > next.high && curr.close < curr.open) {
-      fvgs.push({
-        index: i,
-        direction: -1,
-        top: prev.low,
-        bottom: next.high,
-        mitigatedIndex: null
-      });
+      const gapSize = prev.low - next.high;
+      const candleSize = curr.high - curr.low;
+      const ratio = candleSize === 0 ? 0 : gapSize / candleSize;
+      
+      if (ratio >= minFvgRatio) {
+        fvgs.push({
+          index: i,
+          direction: -1,
+          top: prev.low,
+          bottom: next.high,
+          mitigatedIndex: null
+        });
+      }
     }
   }
 

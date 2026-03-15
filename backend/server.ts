@@ -23,8 +23,9 @@ app.get('/api/gold', async (req, res) => {
   const range = (req.query.range as string) || '5d';
   const swingLength = parseInt(req.query.swingLength as string) || 5;
   const strictMode = req.query.strictMode !== 'false';
+  const minFvgRatio = parseFloat(req.query.minFvgRatio as string) || 0;
 
-  console.log(`[API] Request: timeframe=${timeframe}, range=${range}, swingLength=${swingLength}, strictMode=${strictMode}`);
+  console.log(`[API] Request: timeframe=${timeframe}, range=${range}, swingLength=${swingLength}, strictMode=${strictMode}, minFvgRatio=${minFvgRatio}`);
 
   try {
     let finalTimeframe = timeframe;
@@ -85,7 +86,7 @@ app.get('/api/gold', async (req, res) => {
       ohlc = aggregated;
     }
 
-    const fvgs = calculateFVG(ohlc);
+    const fvgs = calculateFVG(ohlc, minFvgRatio);
     const swings = calculateSwingHighsLows(ohlc, swingLength);
     const ith_itl = calculateITH_ITL(ohlc, swings, fvgs, timeframe, strictMode);
     const sweeps = calculateSweeps(ohlc, ith_itl);

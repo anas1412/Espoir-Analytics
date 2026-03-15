@@ -13,13 +13,15 @@ interface SidebarProps {
   setSweepStart: (val: string) => void;
   sweepEnd: string;
   setSweepEnd: (val: string) => void;
-  alerts: MarketAlert[];
-  error: string | null;
-  loading: boolean;
   showMtf: boolean;
   setShowMtf: (val: boolean) => void;
   strictMode: boolean;
   setStrictMode: (val: boolean) => void;
+  minFvgRatio: number;
+  setMinFvgRatio: (val: number) => void;
+  alerts: MarketAlert[];
+  error: string | null;
+  loading: boolean;
 }
 
 export function Sidebar(props: SidebarProps) {
@@ -57,6 +59,8 @@ export function Sidebar(props: SidebarProps) {
             setShowMtf={props.setShowMtf}
             strictMode={props.strictMode}
             setStrictMode={props.setStrictMode}
+            minFvgRatio={props.minFvgRatio}
+            setMinFvgRatio={props.setMinFvgRatio}
           />
           <MarketLogs 
             alerts={props.alerts} 
