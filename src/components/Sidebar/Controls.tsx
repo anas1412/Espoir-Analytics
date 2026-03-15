@@ -1,4 +1,4 @@
-import { Settings2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface ControlsProps {
   swingLength: number;
@@ -30,17 +30,17 @@ export function Controls({
   minFvgRatio, setMinFvgRatio
 }: ControlsProps) {
   return (
-    <section className="space-y-5">
-      <div className="flex items-center space-x-2 text-slate-400 mb-2">
-        <Settings2 size={14} />
-        <h2 className="text-[11px] font-bold uppercase tracking-widest">Configuration</h2>
+    <div className="space-y-6">
+      <div className="flex items-center space-x-2 text-zinc-500 mb-2">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">Strategy Parameters</h2>
       </div>
       
-      <div className="space-y-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
+      <div className="space-y-8">
+        {/* Swing Length */}
         <div className="space-y-3">
-          <div className="flex justify-between items-end px-1">
-            <label className="text-[10px] text-slate-500 font-semibold uppercase">Swing Length</label>
-            <span className="text-indigo-400 font-mono text-sm font-bold">{swingLength}</span>
+          <div className="flex justify-between items-center px-0.5">
+            <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Swing Sensitivity</label>
+            <span className="text-zinc-100 font-mono text-xs bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-700">{swingLength}</span>
           </div>
           <input 
             type="range" 
@@ -48,14 +48,16 @@ export function Controls({
             max="50" 
             value={swingLength}
             onChange={(e) => setSwingLength(parseInt(e.target.value))}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all"
+            className="w-full h-[3px] bg-zinc-800 rounded-full appearance-none cursor-pointer hover:bg-zinc-700 transition-colors"
           />
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">Adjusts how big the market turns need to be.</p>
         </div>
 
+        {/* FVG Ratio */}
         <div className="space-y-3">
-          <div className="flex justify-between items-end px-1">
-            <label className="text-[10px] text-slate-500 font-semibold uppercase">Min FVG Size (%)</label>
-            <span className="text-indigo-400 font-mono text-sm font-bold">{(minFvgRatio * 100).toFixed(0)}%</span>
+          <div className="flex justify-between items-center px-0.5">
+            <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Gap Filter</label>
+            <span className="text-zinc-100 font-mono text-xs bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-700">{(minFvgRatio * 100).toFixed(0)}%</span>
           </div>
           <input 
             type="range" 
@@ -64,89 +66,115 @@ export function Controls({
             step="0.05"
             value={minFvgRatio}
             onChange={(e) => setMinFvgRatio(parseFloat(e.target.value))}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all"
+            className="w-full h-[3px] bg-zinc-800 rounded-full appearance-none cursor-pointer hover:bg-zinc-700 transition-colors"
           />
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">Higher % hides tiny, unimportant price gaps.</p>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1">Lookback (Days)</label>
-          <input 
-            type="number" 
-            min="1" 
-            max="30" 
-            value={lookbackDays}
-            onChange={(e) => setLookbackDays(parseInt(e.target.value))}
-            className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
-          />
+        {/* Lookback */}
+        <div className="space-y-3">
+          <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider ml-0.5">Scan Depth</label>
+          <div className="relative group">
+            <input 
+              type="number" 
+              min="1" 
+              max="30" 
+              value={lookbackDays}
+              onChange={(e) => setLookbackDays(parseInt(e.target.value))}
+              className="w-full bg-zinc-900 border border-zinc-800 group-hover:border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-400 transition-all font-mono"
+            />
+            <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500 font-bold uppercase pointer-events-none">Days</span>
+          </div>
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">How many days back to look for trading levels.</p>
         </div>
 
-        <div className="space-y-3 pt-2 border-t border-slate-800/50">
+        {/* Time Window */}
+        <div className="space-y-4 pt-6 border-t border-zinc-900">
           <div className="flex items-center justify-between">
-            <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1 cursor-pointer select-none" htmlFor="filter-sweeps-toggle">
-              Enforce Sweep Window
+            <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider cursor-pointer" htmlFor="filter-sweeps-toggle">
+              Session Only
             </label>
+            <div 
+              className={`w-8 h-4 rounded-full relative transition-all cursor-pointer ${filterSweepsByWindow ? 'bg-zinc-200' : 'bg-zinc-800'}`}
+              onClick={() => setFilterSweepsByWindow(!filterSweepsByWindow)}
+            >
+              <motion.div 
+                animate={{ x: filterSweepsByWindow ? 16 : 2 }}
+                className="absolute top-0.5 w-3 h-3 rounded-full bg-zinc-950"
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            </div>
             <input 
               id="filter-sweeps-toggle"
               type="checkbox"
               checked={filterSweepsByWindow}
               onChange={(e) => setFilterSweepsByWindow(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-700/50 bg-slate-800/50 text-indigo-600 focus:ring-indigo-500/50 transition-all cursor-pointer"
+              className="hidden"
             />
           </div>
 
-          <div className={`grid grid-cols-2 gap-3 transition-opacity ${!filterSweepsByWindow ? 'opacity-40 pointer-events-none' : ''}`}>
-            <div className="space-y-2">
-              <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1">Sweep Start</label>
+          <div className={`space-y-3 transition-all duration-300 ${!filterSweepsByWindow ? 'opacity-30 blur-[1px] pointer-events-none' : ''}`}>
+            <div className="grid grid-cols-2 gap-3">
               <input 
                 type="time" 
                 value={sweepStart}
                 onChange={(e) => setSweepStart(e.target.value)}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-indigo-500/50 transition-all font-mono"
+                style={{ colorScheme: 'dark' }}
+                className="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-400 transition-all font-mono w-full"
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1">Sweep End</label>
               <input 
                 type="time" 
                 value={sweepEnd}
                 onChange={(e) => setSweepEnd(e.target.value)}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-indigo-500/50 transition-all font-mono"
+                style={{ colorScheme: 'dark' }}
+                className="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-400 transition-all font-mono w-full"
               />
             </div>
           </div>
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">Only show sweeps during these specific hours.</p>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800/50">
-          <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1 cursor-pointer select-none" htmlFor="mtf-toggle">
-            Multi-Timeframe Signals
-          </label>
-          <input 
-            id="mtf-toggle"
-            type="checkbox"
-            checked={showMtf}
-            onChange={(e) => setShowMtf(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-700/50 bg-slate-800/50 text-indigo-600 focus:ring-indigo-500/50 transition-all cursor-pointer"
-          />
-        </div>
-
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800/50">
-          <div className="flex flex-col">
-            <label className="text-[10px] text-slate-500 font-semibold uppercase ml-1 cursor-pointer select-none" htmlFor="strict-toggle">
-              Strict Mode
-            </label>
-            <span className="text-[8px] text-slate-600 ml-1 leading-none">
-              {strictMode ? 'Strictly inside FVG' : 'Allows piercing (Discretionary)'}
-            </span>
+        {/* MTF & Strict */}
+        <div className="space-y-4 pt-6 border-t border-zinc-900">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider cursor-pointer" htmlFor="mtf-toggle">Multi-Timeframe</label>
+            </div>
+            <div 
+              className={`w-8 h-4 rounded-full relative transition-all cursor-pointer ${showMtf ? 'bg-zinc-200' : 'bg-zinc-800'}`}
+              onClick={() => setShowMtf(!showMtf)}
+            >
+              <motion.div 
+                animate={{ x: showMtf ? 16 : 2 }}
+                className="absolute top-0.5 w-3 h-3 rounded-full bg-zinc-950"
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            </div>
+            <input id="mtf-toggle" type="checkbox" checked={showMtf} onChange={(e) => setShowMtf(e.target.checked)} className="hidden" />
           </div>
-          <input 
-            id="strict-toggle"
-            type="checkbox"
-            checked={strictMode}
-            onChange={(e) => setStrictMode(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-700/50 bg-slate-800/50 text-indigo-600 focus:ring-indigo-500/50 transition-all cursor-pointer"
-          />
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">Shows levels from all timeframes at once.</p>
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider cursor-pointer" htmlFor="strict-toggle">Strict Gaps</label>
+            </div>
+            <div 
+              className={`w-8 h-4 rounded-full relative transition-all cursor-pointer ${strictMode ? 'bg-zinc-200' : 'bg-zinc-800'}`}
+              onClick={() => setStrictMode(!strictMode)}
+            >
+              <motion.div 
+                animate={{ x: strictMode ? 16 : 2 }}
+                className="absolute top-0.5 w-3 h-3 rounded-full bg-zinc-950"
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            </div>
+            <input id="strict-toggle" type="checkbox" checked={strictMode} onChange={(e) => setStrictMode(e.target.checked)} className="hidden" />
+          </div>
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">
+            {strictMode ? 'Levels must stay perfectly inside gaps.' : 'Allows levels to pierce through gaps.'}
+          </p>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

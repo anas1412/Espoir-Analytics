@@ -13,20 +13,20 @@ export function LoadingOverlay({ isLoading }: LoadingOverlayProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 z-10 bg-[#0b0e14]/60 backdrop-blur-sm flex items-center justify-center"
+          className="absolute inset-0 z-10 bg-black/60 backdrop-blur-md flex items-center justify-center"
         >
           <div className="flex flex-col items-center space-y-6">
             <div className="relative">
-              <Activity className="text-indigo-500 animate-pulse" size={48} />
+              <Activity className="text-white" size={32} />
               <motion.div 
                 animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                className="absolute inset-0 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full"
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                className="absolute inset-0 border-[3px] border-white/5 border-t-white rounded-full -m-4"
               />
             </div>
             <div className="text-center">
-              <h3 className="text-white font-black text-lg uppercase tracking-widest mb-1">Synchronizing</h3>
-              <p className="text-indigo-400/60 text-[10px] font-bold uppercase tracking-widest animate-pulse">Scanning liquidity levels...</p>
+              <h3 className="text-white font-bold text-sm uppercase tracking-[0.3em] mb-1">Synchronizing</h3>
+              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Scanning liquidity horizons</p>
             </div>
           </div>
         </motion.div>

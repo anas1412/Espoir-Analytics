@@ -26,12 +26,12 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSwee
     if (!chartRef.current) {
       const chart = createChart(chartContainerRef.current, {
         layout: {
-          background: { color: '#0b0e14' },
-          textColor: '#94a3b8',
+          background: { color: '#000000' },
+          textColor: '#71717a',
         },
         grid: {
-          vertLines: { color: 'rgba(30, 41, 59, 0.5)' },
-          horzLines: { color: 'rgba(30, 41, 59, 0.5)' },
+          vertLines: { color: '#0f0f0f' },
+          horzLines: { color: '#0f0f0f' },
         },
         crosshair: {
           mode: CrosshairMode.Normal,
@@ -39,20 +39,20 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSwee
         timeScale: {
           timeVisible: true,
           secondsVisible: false,
-          borderColor: '#1e293b',
+          borderColor: '#1a1a1a',
         },
         rightPriceScale: {
-          borderColor: '#1e293b',
+          borderColor: '#1a1a1a',
         }
       });
       chartRef.current = chart;
 
       const series = chart.addSeries(CandlestickSeries, {
         upColor: '#10b981',
-        downColor: '#ef4444',
+        downColor: '#f43f5e',
         borderVisible: false,
         wickUpColor: '#10b981',
-        wickDownColor: '#ef4444',
+        wickDownColor: '#f43f5e',
       });
       seriesRef.current = series;
       markersPluginRef.current = createSeriesMarkers(series);
@@ -92,10 +92,10 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSwee
         markers.push({
           time: matchingCandle.time,
           position: isITH ? 'aboveBar' : 'belowBar',
-          color: isITH ? '#ef4444' : '#10b981',
+          color: isITH ? '#f43f5e' : '#10b981',
           shape: isITH ? 'arrowDown' : 'arrowUp',
           text: `${tfPrefix}${termLabel} ${isITH ? 'ITH' : 'ITL'}`,
-          size: 2,
+          size: 1,
         });
 
         newAlerts.push({
@@ -161,17 +161,18 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSwee
 
     chartRef.current.timeScale().fitContent();
     
-    const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-        });
-      }
-    };
-    window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries.length === 0 || !chartRef.current) return;
+      const { width, height } = entries[0].contentRect;
+      chartRef.current.applyOptions({ width, height });
+    });
+
+    if (chartContainerRef.current) {
+      resizeObserver.observe(chartContainerRef.current);
+    }
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
     };
   }, [data, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate]);
 

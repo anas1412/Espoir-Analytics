@@ -25,7 +25,7 @@ export function TradingChart() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-[#0b0e14] text-slate-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
+    <div className="flex h-screen bg-black text-zinc-100 font-sans selection:bg-zinc-500/30 overflow-hidden">
       <Sidebar 
         swingLength={swingLength} setSwingLength={setSwingLength}
         lookbackDays={lookbackDays} setLookbackDays={setLookbackDays}
@@ -40,7 +40,7 @@ export function TradingChart() {
         loading={loading}
       />
 
-      <div className="flex-1 flex flex-col relative bg-[#0b0e14]">
+      <div className="flex-1 min-w-0 flex flex-col relative bg-black">
         <ChartHeader 
           sweepStart={sweepStart} 
           sweepEnd={sweepEnd} 
@@ -69,11 +69,11 @@ export function TradingChart() {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #1e293b;
+          background: #27272a;
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #334155;
+          background: #3f3f46;
         }
       ` }} />
     </div>

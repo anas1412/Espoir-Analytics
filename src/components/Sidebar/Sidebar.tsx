@@ -1,5 +1,6 @@
-import { TrendingUp } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { TrendingUp, Settings2, List, Layout } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { Controls } from './Controls';
 import { MarketLogs } from './MarketLogs';
 import type { MarketAlert } from '../../types';
@@ -27,51 +28,119 @@ interface SidebarProps {
 }
 
 export function Sidebar(props: SidebarProps) {
+  const [activeTab, setActiveTab] = useState<'settings' | 'logs' | 'chart'>('settings');
+
   return (
     <motion.div 
-      initial={{ x: -320 }}
+      initial={{ x: -380 }}
       animate={{ x: 0 }}
-      transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-      className="w-85 bg-slate-950 border-r border-slate-800 flex flex-col z-20 shadow-2xl"
+      transition={{ type: 'tween', duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+      className="w-[380px] bg-black border-r border-zinc-900 flex flex-col z-20 shadow-xl"
     >
-      <div className="p-5 border-b border-slate-800/60 bg-slate-950/50 backdrop-blur-xl">
-        <div className="flex items-center space-x-3 text-indigo-400 group">
-          <div className="p-2 bg-indigo-500/10 rounded-xl group-hover:bg-indigo-500/20 transition-colors">
-            <TrendingUp size={24} className="group-hover:scale-110 transition-transform" />
+      <div className="p-6 border-b border-zinc-900">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 bg-zinc-800 rounded-md border border-zinc-700 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+            <TrendingUp size={18} className="text-zinc-100" />
           </div>
           <div>
-            <h1 className="font-black text-xl tracking-tight text-white leading-none">ITT</h1>
-            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest mt-1">Intermediate Term Trading</p>
+            <h1 className="font-bold text-xl tracking-tight text-white leading-none">ITT</h1>
+            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-1.5">Analytics</p>
           </div>
+        </div>
+
+        {/* Tab Selection */}
+        <div className="flex bg-zinc-900/50 p-1 rounded-md border border-zinc-800 relative">
+          {(['settings', 'logs', 'chart'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className="flex-1 relative flex items-center justify-center space-x-2 py-2 rounded-md text-xs font-bold transition-colors z-10"
+              style={{ color: activeTab === tab ? '#ffffff' : '#71717a' }}
+            >
+              <span className="relative z-20 flex items-center space-x-2">
+                {tab === 'settings' && <Settings2 size={14} />}
+                {tab === 'logs' && <List size={14} />}
+                {tab === 'chart' && <Layout size={14} />}
+                <span className="capitalize">{tab === 'settings' ? 'Setup' : tab}</span>
+              </span>
+              {activeTab === tab && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-zinc-800 rounded-md shadow-sm border border-zinc-700"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="p-5 space-y-8">
-          <Controls 
-            swingLength={props.swingLength}
-            setSwingLength={props.setSwingLength}
-            lookbackDays={props.lookbackDays}
-            setLookbackDays={props.setLookbackDays}
-            sweepStart={props.sweepStart}
-            setSweepStart={props.setSweepStart}
-            sweepEnd={props.sweepEnd}
-            setSweepEnd={props.setSweepEnd}
-            filterSweepsByWindow={props.filterSweepsByWindow}
-            setFilterSweepsByWindow={props.setFilterSweepsByWindow}
-            showMtf={props.showMtf}
-            setShowMtf={props.setShowMtf}
-            strictMode={props.strictMode}
-            setStrictMode={props.setStrictMode}
-            minFvgRatio={props.minFvgRatio}
-            setMinFvgRatio={props.setMinFvgRatio}
-          />
-          <MarketLogs 
-            alerts={props.alerts} 
-            error={props.error} 
-            loading={props.loading} 
-          />
-        </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+        <AnimatePresence mode="wait">
+          {activeTab === 'settings' && (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+              className="p-6"
+            >
+              <Controls 
+                swingLength={props.swingLength}
+                setSwingLength={props.setSwingLength}
+                lookbackDays={props.lookbackDays}
+                setLookbackDays={props.setLookbackDays}
+                sweepStart={props.sweepStart}
+                setSweepStart={props.setSweepStart}
+                sweepEnd={props.sweepEnd}
+                setSweepEnd={props.setSweepEnd}
+                filterSweepsByWindow={props.filterSweepsByWindow}
+                setFilterSweepsByWindow={props.setFilterSweepsByWindow}
+                showMtf={props.showMtf}
+                setShowMtf={props.setShowMtf}
+                strictMode={props.strictMode}
+                setStrictMode={props.setStrictMode}
+                minFvgRatio={props.minFvgRatio}
+                setMinFvgRatio={props.setMinFvgRatio}
+              />
+            </motion.div>
+          )}
+          {activeTab === 'logs' && (
+            <motion.div
+              key="logs"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="p-6"
+            >
+              <MarketLogs 
+                alerts={props.alerts} 
+                error={props.error} 
+                loading={props.loading} 
+              />
+            </motion.div>
+          )}
+          {activeTab === 'chart' && (
+            <motion.div
+              key="chart"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="p-6 h-full flex flex-col items-center justify-center text-center space-y-4"
+            >
+              <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800">
+                <Layout className="text-zinc-600" size={24} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest">Chart Settings</h3>
+                <p className="text-[11px] text-zinc-500 mt-2 leading-relaxed">Visual customization and theme controls coming soon.</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
