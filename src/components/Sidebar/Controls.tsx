@@ -102,22 +102,41 @@ export function Controls({
           <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">Higher % hides tiny, unimportant price gaps.</p>
         </div>
 
-        {/* Lookback */}
-        <div className="space-y-3">
-          <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider ml-0.5">Scan Depth</label>
-          <div className="relative group">
-            <input 
-              type="number" 
-              min="1" 
-              max="30" 
-              value={lookbackDays}
-              onChange={(e) => setLookbackDays(parseInt(e.target.value))}
-              style={{ colorScheme: 'dark' }}
-              className="w-full bg-zinc-900 border border-zinc-800 group-hover:border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-400 transition-all font-mono"
-            />
-            <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500 font-bold uppercase pointer-events-none">Days</span>
+        {/* Depth & Expiry */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
+              <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider ml-0.5">Scan Depth</label>
+              <div className="relative group">
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="30" 
+                  value={lookbackDays}
+                  onChange={(e) => setLookbackDays(parseInt(e.target.value))}
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full bg-zinc-900 border border-zinc-800 group-hover:border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-400 transition-all font-mono"
+                />
+                <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500 font-bold uppercase pointer-events-none">Days</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider ml-0.5">Level Expiry</label>
+              <div className="relative group">
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="30" 
+                  value={levelExpiryDays}
+                  onChange={(e) => setLevelExpiryDays(parseInt(e.target.value))}
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full bg-zinc-900 border border-zinc-800 group-hover:border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-400 transition-all font-mono"
+                />
+                <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500 font-bold uppercase pointer-events-none">Days</span>
+              </div>
+            </div>
           </div>
-          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">How many days back to look for trading levels.</p>
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">Adjust how far back to scan and how long to keep unswept levels live.</p>
         </div>
 
         {/* Time Window */}
@@ -263,24 +282,6 @@ export function Controls({
           </p>
         </div>
 
-        {/* Level Expiry */}
-        <div className="space-y-4 pt-6 border-t border-zinc-900">
-          <div className="flex justify-between items-center px-0.5">
-            <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Level Expiry (Clean-up)</label>
-            <span className="text-zinc-100 font-mono text-xs bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-700">{levelExpiryDays}d</span>
-          </div>
-          <input 
-            type="range" 
-            min="1" 
-            max="30" 
-            value={levelExpiryDays}
-            onChange={(e) => setLevelExpiryDays(parseInt(e.target.value))}
-            className="w-full h-[3px] bg-zinc-800 rounded-full appearance-none cursor-pointer hover:bg-zinc-700 transition-colors"
-          />
-          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">
-            Automatically hides "live" (unswept) levels after {levelExpiryDays} days to keep the chart clean and relevant.
-          </p>
-        </div>
       </div>
     </div>
   );
