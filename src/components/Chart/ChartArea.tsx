@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { createChart, CrosshairMode, type ISeriesApi, type SeriesMarker, type Time, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts';
+import { createChart, CrosshairMode, type ISeriesApi, type SeriesMarker, type Time, CandlestickSeries, createSeriesMarkers, HistogramSeries } from 'lightweight-charts';
 import type { ChartData, MarketAlert } from '../../types';
 import { isTimeInWindow } from '../../utils/time';
+import { SESSIONS, isInSession, isNewDay } from '../../utils/sessions';
 
 interface ChartAreaProps {
   data: ChartData;
@@ -10,59 +11,170 @@ interface ChartAreaProps {
   sweepEnd: string;
   filterSweepsByWindow: boolean;
   onAlertsUpdate: (alerts: MarketAlert[]) => void;
+  resetCounter: number;
+  showSessions: boolean;
+  showDayDividers: boolean;
+  londonColor: string;
+  nyColor: string;
 }
 
-export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate }: ChartAreaProps) {
+export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor }: ChartAreaProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sessionSeriesRef = useRef<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dividerSeriesRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersPluginRef = useRef<any>(null);
+  const isFirstLoadRef = useRef(true);
 
+  // 1. Initial Chart Setup
   useEffect(() => {
-    if (!chartContainerRef.current || !data.ohlc || data.ohlc.length === 0) return;
+    if (!chartContainerRef.current) return;
 
-    if (!chartRef.current) {
-      const chart = createChart(chartContainerRef.current, {
-        layout: {
-          background: { color: '#000000' },
-          textColor: '#71717a',
-        },
-        grid: {
-          vertLines: { color: '#0f0f0f' },
-          horzLines: { color: '#0f0f0f' },
-        },
-        crosshair: {
-          mode: CrosshairMode.Normal,
-        },
-        timeScale: {
-          timeVisible: true,
-          secondsVisible: false,
-          borderColor: '#1a1a1a',
-        },
-        rightPriceScale: {
-          borderColor: '#1a1a1a',
-        }
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { color: '#000000' },
+        textColor: '#71717a',
+      },
+      grid: {
+        vertLines: { color: '#0f0f0f' },
+        horzLines: { color: '#0f0f0f' },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        borderColor: '#1a1a1a',
+      },
+      rightPriceScale: {
+        borderColor: '#1a1a1a',
+        autoScale: true,
+      }
+    });
+    chartRef.current = chart;
+
+    const series = chart.addSeries(CandlestickSeries, {
+      upColor: '#10b981',
+      downColor: '#f43f5e',
+      borderVisible: false,
+      wickUpColor: '#10b981',
+      wickDownColor: '#f43f5e',
+    });
+    seriesRef.current = series;
+    markersPluginRef.current = createSeriesMarkers(series);
+
+    // Create Session Series
+    sessionSeriesRef.current = [];
+    SESSIONS.forEach((session) => {
+      const sessSeries = chart.addSeries(HistogramSeries, {
+        color: 'rgba(0,0,0,0)',
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'sessions',
+        base: 0,
       });
-      chartRef.current = chart;
-
-      const series = chart.addSeries(CandlestickSeries, {
-        upColor: '#10b981',
-        downColor: '#f43f5e',
-        borderVisible: false,
-        wickUpColor: '#10b981',
-        wickDownColor: '#f43f5e',
+      chart.priceScale('sessions').applyOptions({
+        scaleMargins: { top: 0, bottom: 0 },
+        visible: false,
       });
-      seriesRef.current = series;
-      markersPluginRef.current = createSeriesMarkers(series);
-    }
+      sessionSeriesRef.current.push({ name: session.name, series: sessSeries, config: session });
+    });
 
-    const ohlc = data.ohlc || [];
-    if (ohlc.length === 0) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Create Divider Series
+    dividerSeriesRef.current = chart.addSeries(HistogramSeries, {
+      color: 'rgba(113, 113, 122, 0.2)',
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'dividers',
+      base: 0,
+    });
+    chart.priceScale('dividers').applyOptions({
+      scaleMargins: { top: 0, bottom: 0 },
+      visible: false,
+    });
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries.length === 0 || !chartRef.current) return;
+      const { width, height } = entries[0].contentRect;
+      chartRef.current.applyOptions({ width, height });
+    });
+
+    resizeObserver.observe(chartContainerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+      chart.remove();
+      chartRef.current = null;
+    };
+  }, []);
+
+  // 2. Data & Sessions Update (Runs on OHLC data change or toggle)
+  useEffect(() => {
+    if (!chartRef.current || !data.ohlc || data.ohlc.length === 0) return;
+    const ohlc = data.ohlc;
+
     seriesRef.current?.setData(ohlc as any);
 
+    // Update Sessions Data
+    sessionSeriesRef.current.forEach(({ series, config }) => {
+      if (!showSessions) {
+        series.setData([]);
+        return;
+      }
+      const sessionData = ohlc.map(c => ({
+        time: c.time,
+        value: isInSession(c.time as number, config.start, config.end) ? 1 : 0,
+      }));
+      series.setData(sessionData);
+    });
+
+    // Update Dividers Data
+    if (dividerSeriesRef.current) {
+      if (!showDayDividers) {
+        dividerSeriesRef.current.setData([]);
+      } else {
+        const dividerData = ohlc.map((c, i) => ({
+          time: c.time,
+          value: i > 0 && isNewDay(ohlc[i-1].time as number, c.time as number) ? 1 : 0,
+        }));
+        dividerSeriesRef.current.setData(dividerData);
+      }
+    }
+
+    // Auto-fit on initial load
+    if (isFirstLoadRef.current) {
+      const timeScale = chartRef.current.timeScale();
+      const lastIndex = ohlc.length - 1;
+      timeScale.setVisibleLogicalRange({
+        from: Math.max(0, lastIndex - 150),
+        to: lastIndex + 10,
+      });
+      isFirstLoadRef.current = false;
+    }
+  }, [data.ohlc, showSessions, showDayDividers]);
+
+  // 3. Color Update (High Performance - No setData)
+  useEffect(() => {
+    if (!chartRef.current) return;
+
+    sessionSeriesRef.current.forEach(({ series, config }) => {
+      const hex = config.name === 'London' ? londonColor : nyColor;
+      // Faster hex to rgba
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      series.applyOptions({ color: `rgba(${r}, ${g}, ${b}, 0.08)` });
+    });
+  }, [londonColor, nyColor]);
+
+  // 4. Markers & Alerts Update
+  useEffect(() => {
+    if (!chartRef.current || !data.ohlc || data.ohlc.length === 0) return;
+    const ohlc = data.ohlc;
     const lookbackTimestamp = Math.floor(Date.now() / 1000) - (lookbackDays * 86400);
 
     const markers: SeriesMarker<Time>[] = [];
@@ -158,23 +270,20 @@ export function ChartArea({ data, lookbackDays, sweepStart, sweepEnd, filterSwee
     setTimeout(() => {
       onAlertsUpdate(newAlerts.sort((a, b) => b.timestamp - a.timestamp));
     }, 0);
+  }, [data.ith_itl, data.sweeps, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate]);
 
-    chartRef.current.timeScale().fitContent();
-    
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (entries.length === 0 || !chartRef.current) return;
-      const { width, height } = entries[0].contentRect;
-      chartRef.current.applyOptions({ width, height });
-    });
-
-    if (chartContainerRef.current) {
-      resizeObserver.observe(chartContainerRef.current);
+  // 5. Handle Reset View
+  useEffect(() => {
+    if (chartRef.current && data.ohlc.length > 0) {
+      const timeScale = chartRef.current.timeScale();
+      const lastIndex = data.ohlc.length - 1;
+      timeScale.setVisibleLogicalRange({
+        from: Math.max(0, lastIndex - 150),
+        to: lastIndex + 10,
+      });
     }
+  }, [resetCounter]);
 
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [data, lookbackDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate]);
 
   return <div ref={chartContainerRef} className="absolute inset-0" />;
 }

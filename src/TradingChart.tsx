@@ -14,11 +14,26 @@ export function TradingChart() {
   const [sweepEnd, setSweepEnd] = useState('22:00');
   const [filterSweepsByWindow, setFilterSweepsByWindow] = useState(true);
   const [showMtf, setShowMtf] = useState(false);
-  const [strictMode, setStrictMode] = useState(true);
+  const [strictMode, setStrictMode] = useState(false);
   const [minFvgRatio, setMinFvgRatio] = useState(0.1);
+  const [showSweeps, setShowSweeps] = useState(true);
+  const [showSessions, setShowSessions] = useState(true);
+  const [showDayDividers, setShowDayDividers] = useState(true);
+  const [londonColor, setLondonColor] = useState('#38bdf8');
+  const [nyColor, setNyColor] = useState('#22c55e');
+  const [selectedMtfTfs, setSelectedMtfTfs] = useState(['5m', '15m', '30m', '1h', '4h']);
   const [alerts, setAlerts] = useState<MarketAlert[]>([]);
+  const [resetCounter, setResetCounter] = useState(0);
 
-  const { data, loading, error } = useMarketData({ timeframe, swingLength, showMtf, strictMode, minFvgRatio });
+  const { data, loading, error } = useMarketData({ 
+    timeframe, 
+    swingLength, 
+    showMtf, 
+    strictMode, 
+    minFvgRatio,
+    selectedMtfTfs,
+    showSweeps
+  });
 
   const handleAlertsUpdate = useCallback((newAlerts: MarketAlert[]) => {
     setAlerts(newAlerts);
@@ -39,6 +54,12 @@ export function TradingChart() {
         showMtf={showMtf} setShowMtf={setShowMtf}
         strictMode={strictMode} setStrictMode={setStrictMode}
         minFvgRatio={minFvgRatio} setMinFvgRatio={setMinFvgRatio}
+        selectedMtfTfs={selectedMtfTfs} setSelectedMtfTfs={setSelectedMtfTfs}
+        showSweeps={showSweeps} setShowSweeps={setShowSweeps}
+        showSessions={showSessions} setShowSessions={setShowSessions}
+        showDayDividers={showDayDividers} setShowDayDividers={setShowDayDividers}
+        londonColor={londonColor} setLondonColor={setLondonColor}
+        nyColor={nyColor} setNyColor={setNyColor}
         alerts={alerts}
         error={error}
         loading={loading}
@@ -50,6 +71,7 @@ export function TradingChart() {
           sweepEnd={sweepEnd} 
           timeframe={timeframe} 
           setTimeframe={setTimeframe} 
+          onReset={() => setResetCounter(c => c + 1)}
         />
 
         <div className="flex-1 relative overflow-hidden">
@@ -61,6 +83,11 @@ export function TradingChart() {
             sweepEnd={sweepEnd}
             filterSweepsByWindow={filterSweepsByWindow}
             onAlertsUpdate={handleAlertsUpdate}
+            resetCounter={resetCounter}
+            showSessions={showSessions}
+            showDayDividers={showDayDividers}
+            londonColor={londonColor}
+            nyColor={nyColor}
           />
         </div>
       </div>

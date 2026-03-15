@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ControlsProps {
   swingLength: number;
@@ -17,6 +17,10 @@ interface ControlsProps {
   setStrictMode: (val: boolean) => void;
   minFvgRatio: number;
   setMinFvgRatio: (val: number) => void;
+  selectedMtfTfs: string[];
+  setSelectedMtfTfs: (val: string[]) => void;
+  showSweeps: boolean;
+  setShowSweeps: (val: boolean) => void;
 }
 
 export function Controls({
@@ -27,8 +31,20 @@ export function Controls({
   filterSweepsByWindow, setFilterSweepsByWindow,
   showMtf, setShowMtf,
   strictMode, setStrictMode,
-  minFvgRatio, setMinFvgRatio
+  minFvgRatio, setMinFvgRatio,
+  selectedMtfTfs, setSelectedMtfTfs,
+  showSweeps, setShowSweeps
 }: ControlsProps) {
+  const availableTfs = ['1m', '3m', '5m', '15m', '30m', '1h', '4h'];
+
+  const toggleTf = (tf: string) => {
+    if (selectedMtfTfs.includes(tf)) {
+      setSelectedMtfTfs(selectedMtfTfs.filter(t => t !== tf));
+    } else {
+      setSelectedMtfTfs([...selectedMtfTfs, tf]);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-2 text-zinc-500 mb-2">
@@ -92,6 +108,29 @@ export function Controls({
         {/* Time Window */}
         <div className="space-y-4 pt-6 border-t border-zinc-900">
           <div className="flex items-center justify-between">
+            <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider cursor-pointer" htmlFor="show-sweeps-toggle">
+              Show Sweeps
+            </label>
+            <div 
+              className={`w-8 h-4 rounded-full relative transition-all cursor-pointer ${showSweeps ? 'bg-amber-400' : 'bg-zinc-800'}`}
+              onClick={() => setShowSweeps(!showSweeps)}
+            >
+              <motion.div 
+                animate={{ x: showSweeps ? 16 : 2 }}
+                className="absolute top-0.5 w-3 h-3 rounded-full bg-zinc-950"
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            </div>
+            <input 
+              id="show-sweeps-toggle"
+              type="checkbox"
+              checked={showSweeps}
+              onChange={(e) => setShowSweeps(e.target.checked)}
+              className="hidden"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
             <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider cursor-pointer" htmlFor="filter-sweeps-toggle">
               Session Only
             </label>
@@ -114,7 +153,7 @@ export function Controls({
             />
           </div>
 
-          <div className={`space-y-3 transition-all duration-300 ${!filterSweepsByWindow ? 'opacity-30 blur-[1px] pointer-events-none' : ''}`}>
+          <div className={`space-y-3 transition-all duration-300 ${(!filterSweepsByWindow || !showSweeps) ? 'opacity-30 blur-[1px] pointer-events-none' : ''}`}>
             <div className="grid grid-cols-2 gap-3">
               <input 
                 type="time" 
@@ -153,9 +192,42 @@ export function Controls({
             </div>
             <input id="mtf-toggle" type="checkbox" checked={showMtf} onChange={(e) => setShowMtf(e.target.checked)} className="hidden" />
           </div>
-          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">Shows levels from all timeframes at once.</p>
+          <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">
+            {showMtf ? 'Combining signals from selected timeframes.' : 'Showing signals only for the active chart timeframe.'}
+          </p>
 
-          <div className="flex items-center justify-between">
+          <AnimatePresence>
+            {showMtf && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="grid grid-cols-4 gap-2 pt-2">
+                  {availableTfs.map(tf => (
+                    <button
+                      key={tf}
+                      onClick={() => toggleTf(tf)}
+                      className={`py-1.5 px-1 rounded-md text-[10px] font-bold border transition-all ${
+                        selectedMtfTfs.includes(tf) 
+                          ? 'bg-zinc-100 border-zinc-100 text-zinc-950' 
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                      }`}
+                    >
+                      {tf}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-zinc-500 mt-3 italic leading-tight">
+                  1m and 3m are excluded by default to reduce noise.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="flex items-center justify-between pt-2">
             <div className="flex flex-col">
               <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider cursor-pointer" htmlFor="strict-toggle">Strict Gaps</label>
             </div>

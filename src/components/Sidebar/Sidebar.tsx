@@ -22,6 +22,18 @@ interface SidebarProps {
   setStrictMode: (val: boolean) => void;
   minFvgRatio: number;
   setMinFvgRatio: (val: number) => void;
+  selectedMtfTfs: string[];
+  setSelectedMtfTfs: (val: string[]) => void;
+  showSweeps: boolean;
+  setShowSweeps: (val: boolean) => void;
+  showSessions: boolean;
+  setShowSessions: (val: boolean) => void;
+  showDayDividers: boolean;
+  setShowDayDividers: (val: boolean) => void;
+  londonColor: string;
+  setLondonColor: (val: string) => void;
+  nyColor: string;
+  setNyColor: (val: string) => void;
   alerts: MarketAlert[];
   error: string | null;
   loading: boolean;
@@ -103,6 +115,10 @@ export function Sidebar(props: SidebarProps) {
                 setStrictMode={props.setStrictMode}
                 minFvgRatio={props.minFvgRatio}
                 setMinFvgRatio={props.setMinFvgRatio}
+                selectedMtfTfs={props.selectedMtfTfs}
+                setSelectedMtfTfs={props.setSelectedMtfTfs}
+                showSweeps={props.showSweeps}
+                setShowSweeps={props.setShowSweeps}
               />
             </motion.div>
           )}
@@ -129,14 +145,77 @@ export function Sidebar(props: SidebarProps) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.2 }}
-              className="p-6 h-full flex flex-col items-center justify-center text-center space-y-4"
+              className="p-6 h-full flex flex-col space-y-6"
             >
-              <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800">
-                <Layout className="text-zinc-600" size={24} />
+              <div className="flex items-center space-x-2 text-zinc-500 mb-2">
+                <Layout size={14} />
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">Chart Visuals</h2>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-widest">Chart Settings</h3>
-                <p className="text-[11px] text-zinc-500 mt-2 leading-relaxed">Visual customization and theme controls coming soon.</p>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider cursor-pointer" htmlFor="sessions-toggle-tab">
+                    Session Highlights
+                  </label>
+                  <div 
+                    className={`w-8 h-4 rounded-full relative transition-all cursor-pointer ${props.showSessions ? 'bg-zinc-200' : 'bg-zinc-800'}`}
+                    onClick={() => props.setShowSessions(!props.showSessions)}
+                  >
+                    <motion.div 
+                      animate={{ x: props.showSessions ? 16 : 2 }}
+                      className="absolute top-0.5 w-3 h-3 rounded-full bg-zinc-950"
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    />
+                  </div>
+                  <input id="sessions-toggle-tab" type="checkbox" checked={props.showSessions} onChange={(e) => props.setShowSessions(e.target.checked)} className="hidden" />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider cursor-pointer" htmlFor="day-dividers-toggle-tab">
+                    Day Dividers
+                  </label>
+                  <div 
+                    className={`w-8 h-4 rounded-full relative transition-all cursor-pointer ${props.showDayDividers ? 'bg-zinc-200' : 'bg-zinc-800'}`}
+                    onClick={() => props.setShowDayDividers(!props.showDayDividers)}
+                  >
+                    <motion.div 
+                      animate={{ x: props.showDayDividers ? 16 : 2 }}
+                      className="absolute top-0.5 w-3 h-3 rounded-full bg-zinc-950"
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    />
+                  </div>
+                  <input id="day-dividers-toggle-tab" type="checkbox" checked={props.showDayDividers} onChange={(e) => props.setShowDayDividers(e.target.checked)} className="hidden" />
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-zinc-900">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Session Colors</h3>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">London</span>
+                    <input 
+                      type="color" 
+                      value={props.londonColor} 
+                      onChange={(e) => props.setLondonColor(e.target.value)}
+                      className="w-6 h-6 rounded-md bg-transparent border-none cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">New York</span>
+                    <input 
+                      type="color" 
+                      value={props.nyColor} 
+                      onChange={(e) => props.setNyColor(e.target.value)}
+                      className="w-6 h-6 rounded-md bg-transparent border-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-zinc-900">
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest">Display Settings</h3>
+                <p className="text-[11px] text-zinc-500 mt-2 leading-relaxed">Customize how the chart and session overlays are rendered.</p>
               </div>
             </motion.div>
           )}

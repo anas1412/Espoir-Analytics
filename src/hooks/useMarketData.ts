@@ -7,9 +7,11 @@ interface UseMarketDataParams {
   showMtf: boolean;
   strictMode: boolean;
   minFvgRatio: number;
+  selectedMtfTfs: string[];
+  showSweeps: boolean;
 }
 
-export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, minFvgRatio }: UseMarketDataParams) => {
+export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, minFvgRatio, selectedMtfTfs, showSweeps }: UseMarketDataParams) => {
   const [data, setData] = useState<ChartData>({ ohlc: [], ith_itl: [], sweeps: [] });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
       setLoading(true);
       setError(null);
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      console.log(`Fetching: timeframe=${timeframe}, swingLength=${swingLength}, strictMode=${strictMode}, minFvgRatio=${minFvgRatio}`);
+      console.log(`Fetching: timeframe=${timeframe}, swingLength=${swingLength}, strictMode=${strictMode}, minFvgRatio=${minFvgRatio}, selectedMtfTfs=${selectedMtfTfs}, showSweeps=${showSweeps}`);
       
       try {
         if (!showMtf) {
@@ -34,10 +36,14 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
             setError(result.error);
             setData({ ohlc: [], ith_itl: [], sweeps: [] });
           } else {
+            // Filter out sweeps if showSweeps is false
+            if (!showSweeps) result.sweeps = [];
             setData(result);
           }
         } else {
-          const allTfs = ['1m', '3m', '5m', '15m', '30m', '1h', '4h'];
+          // Always include the current chart timeframe to get the correct OHLC data
+          const allTfs = Array.from(new Set([timeframe, ...selectedMtfTfs]));
+          
           const fetchTf = async (tf: string) => {
              const response = await fetch(`${apiUrl}/api/gold?timeframe=${tf}&range=30d&swingLength=${swingLength}&strictMode=${strictMode}&minFvgRatio=${minFvgRatio}`);
              const json = await response.json();
@@ -66,9 +72,14 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
           let combinedSweeps: any[] = [];
           
           for (let i=0; i < allTfs.length; i++) {
-             if (results[i] && !results[i].error) {
+             // Only include signals from the selected MTF timeframes
+             // The main timeframe's signals are only included if it is ALSO in selectedMtfTfs
+             if (results[i] && !results[i].error && selectedMtfTfs.includes(allTfs[i])) {
                  combinedIthItl = combinedIthItl.concat(results[i].ith_itl || []);
-                 combinedSweeps = combinedSweeps.concat(results[i].sweeps || []);
+                 // Only add sweeps if showSweeps is true
+                 if (showSweeps) {
+                   combinedSweeps = combinedSweeps.concat(results[i].sweeps || []);
+                 }
              }
           }
 
@@ -94,7 +105,7 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
     return () => {
       isMounted = false;
     };
-  }, [timeframe, swingLength, showMtf, strictMode, minFvgRatio]);
+  }, [timeframe, swingLength, showMtf, strictMode, minFvgRatio, selectedMtfTfs, showSweeps]);
 
   return { data, loading, error };
 };
