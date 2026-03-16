@@ -38,6 +38,7 @@ export function TradingChart() {
   const [londonColor, setLondonColor] = useState(initialSettings?.londonColor || '#38bdf8');
   const [nyColor, setNyColor] = useState(initialSettings?.nyColor || '#22c55e');
   const [sessionOpacity, setSessionOpacity] = useState(initialSettings?.sessionOpacity ?? 0.08);
+  const [timezone, setTimezone] = useState(initialSettings?.timezone || 'UTC');
   const [selectedMtfTfs, setSelectedMtfTfs] = useState<string[]>(initialSettings?.selectedMtfTfs || ['5m', '15m', '30m', '1h', '4h']);
   const [selectedThemeKey, setSelectedThemeKey] = useState(initialSettings?.selectedThemeKey || 'default');
   
@@ -66,7 +67,7 @@ export function TradingChart() {
         filterSweepsByWindow, showMtf, strictMode, minFvgRatio,
         levelExpiryDays, showSweeps, showSessions, showDayDividers,
         londonColor, nyColor, sessionOpacity, selectedMtfTfs,
-        selectedThemeKey, theme
+        selectedThemeKey, theme, timezone
       };
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
       console.log('[Dashboard] Settings auto-saved');
@@ -80,7 +81,7 @@ export function TradingChart() {
     filterSweepsByWindow, showMtf, strictMode, minFvgRatio,
     levelExpiryDays, showSweeps, showSessions, showDayDividers,
     londonColor, nyColor, sessionOpacity, selectedMtfTfs,
-    selectedThemeKey, theme
+    selectedThemeKey, theme, timezone
   ]);
 
   const { data, loading, error } = useMarketData({ 
@@ -120,12 +121,14 @@ export function TradingChart() {
         londonColor={londonColor} setLondonColor={setLondonColor}
         nyColor={nyColor} setNyColor={setNyColor}
         sessionOpacity={sessionOpacity} setSessionOpacity={setSessionOpacity}
+        timezone={timezone} setTimezone={setTimezone}
         theme={theme} setTheme={setTheme}
         selectedThemeKey={selectedThemeKey} setSelectedThemeKey={setSelectedThemeKey}
         alerts={alerts}
         error={error}
         loading={loading}
         onNavigateToTime={(time) => scrollToTimeFunc?.(time)}
+        onRefreshChart={() => setResetCounter(c => c + 1)}
       />
 
       <div className="flex-1 min-w-0 flex flex-col relative bg-black">
@@ -155,6 +158,7 @@ export function TradingChart() {
             nyColor={nyColor}
             sessionOpacity={sessionOpacity}
             theme={theme}
+            timezone={timezone}
             onRegisterScrollToTime={setScrollToTimeFunc}
           />
         </div>

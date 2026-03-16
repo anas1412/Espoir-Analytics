@@ -40,6 +40,8 @@ interface SidebarProps {
   setNyColor: (val: string) => void;
   sessionOpacity: number;
   setSessionOpacity: (val: number) => void;
+  timezone: string;
+  setTimezone: (val: string) => void;
   theme: ChartTheme;
   setTheme: (val: ChartTheme) => void;
   selectedThemeKey: string;
@@ -48,6 +50,7 @@ interface SidebarProps {
   error: string | null;
   loading: boolean;
   onNavigateToTime?: (time: number) => void;
+  onRefreshChart?: () => void;
 }
 
 export function Sidebar(props: SidebarProps) {
@@ -294,6 +297,33 @@ export function Sidebar(props: SidebarProps) {
                       />
                     </div>
                     <input id="day-dividers-toggle-tab" type="checkbox" checked={props.showDayDividers} onChange={(e) => props.setShowDayDividers(e.target.checked)} className="hidden" />
+                  </div>
+
+                  {/* Timezone */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Timezone</label>
+                    </div>
+                    <div className="flex space-x-2">
+                      <select 
+                        value={props.timezone}
+                        onChange={(e) => props.setTimezone(e.target.value)}
+                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-zinc-400 transition-all"
+                      >
+                        <option value="UTC">UTC</option>
+                        <option value="Europe/London">London</option>
+                        <option value="Africa/Tunis">Tunisia</option>
+                        <option value="Europe/Paris">France</option>
+                        <option value="America/New_York">New York</option>
+                      </select>
+                      <button 
+                        onClick={() => props.onRefreshChart?.()}
+                        className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-md text-xs text-zinc-100 font-bold uppercase tracking-wider transition-all"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-zinc-600 font-medium leading-relaxed">Chart and log timestamps.</p>
                   </div>
                 </div>
 

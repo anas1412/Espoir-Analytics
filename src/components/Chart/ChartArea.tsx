@@ -20,10 +20,11 @@ interface ChartAreaProps {
   nyColor: string;
   sessionOpacity: number;
   theme: ChartTheme;
+  timezone: string;
   onRegisterScrollToTime?: (fn: (time: number) => void) => void;
 }
 
-export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor, sessionOpacity, theme, onRegisterScrollToTime }: ChartAreaProps) {
+export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor, sessionOpacity, theme, timezone, onRegisterScrollToTime }: ChartAreaProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -59,6 +60,14 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
         timeVisible: true,
         secondsVisible: false,
         borderColor: theme.gridColor,
+        tickMarkFormatter: (time: number) => {
+          const date = new Date(time * 1000);
+          return date.toLocaleTimeString('en-GB', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: timezone 
+          });
+        },
       },
       rightPriceScale: {
         borderColor: theme.gridColor,
@@ -310,7 +319,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           id: `${signal.time}-${signal.timeframe || 'current'}-${isITH ? 'ITH' : 'ITL'}`,
           time: new Date((signal.time as number) * 1000).toLocaleString('en-GB', { 
             day: '2-digit', month: '2-digit', year: 'numeric', 
-            hour: '2-digit', minute: '2-digit', second: '2-digit' 
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            timeZone: timezone
           }),
           type: isITH ? 'ITH' : 'ITL',
           subtype: `${tfPrefix}${signal.term} ${isITH ? 'ITH' : 'ITL'}`,
@@ -355,10 +365,11 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       // Add Alert (simple - no linking)
       newAlerts.push({
         id: `${signal.time}-${signal.timeframe || 'current'}-${isITH ? 'ITH' : 'ITL'}`,
-        time: new Date((signal.time as number) * 1000).toLocaleString('en-GB', { 
-          day: '2-digit', month: '2-digit', year: 'numeric', 
-          hour: '2-digit', minute: '2-digit', second: '2-digit' 
-        }),
+          time: new Date((signal.time as number) * 1000).toLocaleString('en-GB', { 
+            day: '2-digit', month: '2-digit', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            timeZone: timezone
+          }),
         type: isITH ? 'ITH' : 'ITL',
         subtype: `${tfPrefix}${signal.term} ${isITH ? 'ITH' : 'ITL'}`,
         price: signal.level.toFixed(2),
@@ -389,7 +400,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
         id: `sweep-${sweep.time}-${sweep.timeframe || 'current'}`,
         time: new Date((sweep.time as number) * 1000).toLocaleString('en-GB', { 
           day: '2-digit', month: '2-digit', year: 'numeric', 
-          hour: '2-digit', minute: '2-digit', second: '2-digit' 
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+            timeZone: timezone
         }),
         type: 'SWEEP',
         subtype: `${sweep.timeframe || 'current'} SWEEP`,
@@ -412,7 +424,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       const isSH = conf.legType === 'StopHunt';
       const timeStr = new Date(conf.sweepTime * 1000).toLocaleString('en-GB', { 
         day: '2-digit', month: '2-digit', year: 'numeric', 
-        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        timeZone: 'UTC'
       });
       
       if (conf.status === 'Confirmed' && conf.ifvg) {
@@ -519,16 +532,33 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     }, 0);
   }, [data.ith_itl, data.sweeps, data.confirmations, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, timeframe, resetCounter]);
 
-  // 6. Reset View Handler - separate effect for reliability
+  // 6. Reset View Handler - also updates timezone
   useEffect(() => {
     if (!chartRef.current || !data.ohlc || data.ohlc.length === 0) return;
+    
+    // Update tickMarkFormatter with new timezone
+    chartRef.current.timeScale().applyOptions({
+      tickMarkFormatter: (time: number) => {
+        const date = new Date(time * 1000);
+        return date.toLocaleTimeString('en-GB', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          timeZone: timezone 
+        });
+      },
+    });
+    
+    // Force chart to recalculate (updates crosshair tooltip timezone)
+    chartRef.current.timeScale().applyOptions({});
+    
+    // Reset visible range
     const lastIndex = data.ohlc.length - 1;
     chartRef.current.priceScale('right').applyOptions({ autoScale: true });
     chartRef.current.timeScale().setVisibleLogicalRange({
       from: Math.max(0, lastIndex - 150),
       to: lastIndex + 10,
     });
-  }, [resetCounter, data.ohlc.length]);
+  }, [resetCounter, data.ohlc.length, timezone]);
 
   return <div ref={chartContainerRef} className="absolute inset-0" />;
 }
