@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Controls } from './Controls';
 import { MarketLogs } from './MarketLogs';
 import { ConfirmationModal } from '../shared/ConfirmationModal';
+import { DetailModal } from '../shared/DetailModal';
 import type { MarketAlert, ChartTheme } from '../../types';
 
 interface SidebarProps {
@@ -46,10 +47,12 @@ interface SidebarProps {
   alerts: MarketAlert[];
   error: string | null;
   loading: boolean;
+  onNavigateToTime?: (time: number) => void;
 }
 
 export function Sidebar(props: SidebarProps) {
   const [activeTab, setActiveTab] = useState<'settings' | 'logs' | 'chart'>('settings');
+  const [selectedAlert, setSelectedAlert] = useState<MarketAlert | null>(null);
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -230,7 +233,8 @@ export function Sidebar(props: SidebarProps) {
                 <MarketLogs 
                   alerts={props.alerts} 
                   error={props.error} 
-                  loading={props.loading} 
+                  loading={props.loading}
+                  onAlertClick={setSelectedAlert}
                 />
               </motion.div>
             )}
@@ -421,6 +425,12 @@ export function Sidebar(props: SidebarProps) {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      <DetailModal
+        alert={selectedAlert}
+        isOpen={selectedAlert !== null}
+        onClose={() => setSelectedAlert(null)}
+      />
     </>
   );
 }

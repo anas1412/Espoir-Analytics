@@ -50,11 +50,9 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
              // Append timeframe property to signals
              // eslint-disable-next-line @typescript-eslint/no-explicit-any
              if (json.ith_itl) json.ith_itl.forEach((s: any) => s.timeframe = tf);
-             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-             if (json.sweeps) json.sweeps.forEach((s: any) => s.timeframe = tf);
-             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-             if (json.confirmations) json.confirmations.forEach((c: any) => c.timeframe = tf);
-             return json;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              if (json.sweeps) json.sweeps.forEach((s: any) => s.timeframe = tf);
+              return json;
           };
           
           const results = await Promise.all(allTfs.map(fetchTf));
@@ -75,18 +73,19 @@ export const useMarketData = ({ timeframe, swingLength, showMtf, strictMode, min
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let combinedConfirmations: any[] = [];
           
-          for (let i=0; i < allTfs.length; i++) {
-             // Only include signals from the selected MTF timeframes
-             // The main timeframe's signals are only included if it is ALSO in selectedMtfTfs
-             if (results[i] && !results[i].error && selectedMtfTfs.includes(allTfs[i])) {
-                 combinedIthItl = combinedIthItl.concat(results[i].ith_itl || []);
-                 // Only add sweeps if showSweeps is true
-                 if (showSweeps) {
-                   combinedSweeps = combinedSweeps.concat(results[i].sweeps || []);
-                   combinedConfirmations = combinedConfirmations.concat(results[i].confirmations || []);
-                 }
-             }
-          }
+           // Filter signals by MTF selection (ITH/ITL and Sweeps)
+            for (let i=0; i < allTfs.length; i++) {
+              if (results[i] && !results[i].error && selectedMtfTfs.includes(allTfs[i])) {
+                  combinedIthItl = combinedIthItl.concat(results[i].ith_itl || []);
+                  combinedSweeps = combinedSweeps.concat(results[i].sweeps || []);
+              }
+            }
+
+            // Collect confirmations ONCE (they already contain M1+M3+M5 from backend)
+            // Don't collect from each request - that causes duplicates
+            if (results.length > 0 && results[0].confirmations) {
+              combinedConfirmations = results[0].confirmations;
+            }
 
           mainResult.ith_itl = combinedIthItl;
           mainResult.sweeps = combinedSweeps;

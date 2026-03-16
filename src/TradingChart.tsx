@@ -54,6 +54,7 @@ export function TradingChart() {
   });
 
   const saveTimeoutRef = useRef<any>(null);
+  const [scrollToTimeFunc, setScrollToTimeFunc] = useState<((time: number) => void) | null>(null);
 
   // Smart Debounced Auto-Save
   useEffect(() => {
@@ -124,6 +125,7 @@ export function TradingChart() {
         alerts={alerts}
         error={error}
         loading={loading}
+        onNavigateToTime={(time) => scrollToTimeFunc?.(time)}
       />
 
       <div className="flex-1 min-w-0 flex flex-col relative bg-black">
@@ -153,6 +155,7 @@ export function TradingChart() {
             nyColor={nyColor}
             sessionOpacity={sessionOpacity}
             theme={theme}
+            onRegisterScrollToTime={setScrollToTimeFunc}
           />
         </div>
       </div>

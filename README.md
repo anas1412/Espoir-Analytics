@@ -9,14 +9,18 @@ This dashboard is designed to execute a highly specific, multi-timeframe structu
 1. **Identify Liquidity:** The system constantly scans for **ITH** (Intermediate Term Highs) and **ITL** (Intermediate Term Lows).
 2. **Wait for the Sweep:** We wait for price to break through (sweep) an established ITH or ITL.
 3. **Seek Confirmation (The "Rule of One"):** After a sweep, the system seeks a single point of institutional interest:
-   * **Leg Definition:** We identify the **Manipulation Leg**. On any given timeframe, this is the price move starting from the most recent **Swing Extreme** (Swing Low for an ITH sweep, Swing High for an ITL sweep) to the **Sweep Candle**.
+   * **Leg Definition:** We identify the **Manipulation Leg**. On any given timeframe, this is the price move starting from the most recent **Swing Extreme** (Swing Low for an ITH sweep, Swing High for an ITL sweep) to the **True Extreme** - the highest high or lowest low of the drive before reversal.
    * **The FVG Count:** We count the Fair Value Gaps (FVGs) within that specific leg.
    * **Step A (The Filter):** If **multiple (>1)** FVGs exist, the leg is considered "messy." We **Cascade** to the next timeframe to find a cleaner structural view.
    * **Step B (The Violation):** If price breaches the **Extreme** of the manipulation leg (the highest high or lowest low of the drive) *before* an inversion happens, the leg is **Invalidated**.
    * **Step C (The Inversion):** If exactly **one (1)** FVG exists and it is **not** violated, we wait for price to **close through** (invert) this gap. Once it closes through, it becomes an **iFVG** and the trade is **Confirmed**.
-4. **Timeframe Cascading (1m → 3m → 5m):**
-   * **Recalculation:** When moving from 1m to 3m (or 3m to 5m), the system does **not** reuse the 1m coordinates. It **recalculates** the manipulation leg using the higher timeframe's unique swing extremes and sweep candles.
-   * **Finality:** We stop at 5m. If the 5m chart still shows zero or multiple FVGs, the setup is invalidated.
+ 4. **Timeframe Cascading (1m → 3m → 5m):**
+    * **Recalculation:** When moving from 1m to 3m (or 3m to 5m), the system does **not** reuse the 1m coordinates. It **recalculates** the manipulation leg using the higher timeframe's unique swing extremes and sweep candles.
+    * **Always Starts from 1m:** The confirmation cascade ALWAYS starts from 1m data, regardless of which timeframe the ITH/ITL was detected on (1m, 3m, 5m, 15m, etc.). For example:
+      * A **M3 ITH** that gets swept → analyzed on 1m → cascade to 3m → cascade to 5m
+      * A **M15 ITH** that gets swept → analyzed on 1m → cascade to 3m → cascade to 5m
+      * The timeframe shown in logs (e.g., "3m Multi FVGs") refers to the timeframe where the ITH was originally detected, NOT the analysis timeframe.
+    * **Finality:** We stop at 5m. If the 5m chart still shows zero or multiple FVGs, the setup is invalidated.
 5. **The Stop Hunt (The 2nd & Final Chance):**
    * If the **Primary Leg** fails (due to violation or zero signals across all timeframes), the system enters "Hunt Mode."
    * We wait for a **Second Sweep**—specifically, price must sweep the failed extreme of the Primary Leg.
@@ -38,7 +42,7 @@ If you are new to Smart Money Concepts (SMC) and Intermediate Term Trading (ITT)
 * **ITL (Intermediate Term Low):** A swing low that forms inside a bullish Fair Value Gap. It represents a strong structural support level.
   * **Internal ITL:** Forms on lower timeframes (under 5 minutes).
   * **External ITL:** Forms on higher timeframes (5 minutes or higher).
-* **Manipulation Leg:** The specific price move that sweeps the ITH or ITL liquidity. It is defined as the drive from the most recent **Swing Extreme** (Swing High/Low) to the **Sweep Candle**. We seek exactly one FVG in this leg to confirm a trade.
+* **Manipulation Leg:** The specific price move that sweeps the ITH or ITL liquidity. It is defined as the drive from the most recent **Swing Extreme** (Swing High/Low) to the **True Extreme** - the highest high (for ITH sweeps) or lowest low (for ITL sweeps) of the drive before reversal. We seek exactly one FVG in this leg to confirm a trade.
 * **Stop Hunt:** A "2nd chance" sweep that occurs if the primary manipulation leg fails (either by being too messy, empty, or violated). It sweeps the high/low point of the failed primary leg, and we re-run our confirmation check on this new drive.
 
 ---

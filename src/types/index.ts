@@ -25,6 +25,7 @@ export interface Sweep {
   type: 1 | -1;
   level: number;
   sourceIndex: number;
+  sourceTime: number;
   timeframe?: string;
 }
 
@@ -36,6 +37,12 @@ export interface IFVG {
   bottom: number;
   inversionTime: number;
   inversionIndex: number;
+}
+
+export interface CascadeStep {
+  timeframe: string;
+  status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated' | 'Hunting';
+  ifvgCount: number;
 }
 
 export interface Confirmation {
@@ -52,6 +59,7 @@ export interface Confirmation {
   legEndIndex: number;
   extremePrice: number;
   violationIndex?: number;
+  cascadeSteps?: CascadeStep[];
 }
 
 export interface ChartData {
@@ -68,6 +76,7 @@ export interface MarketAlert {
   subtype: string;
   price: string;
   timestamp: number;
+  timeframe?: string;
 }
 
 export interface ChartTheme {

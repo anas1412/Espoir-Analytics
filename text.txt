@@ -1,33 +1,51 @@
-C:\ITT-project>npm install
-npm error code ERESOLVE
-npm error ERESOLVE could not resolve
-npm error
-npm error While resolving: @tailwindcss/vite@4.2.1
-npm error Found: vite@8.0.0
-npm error node_modules/vite
-npm error   dev vite@"^8.0.0" from the root project
-npm error   peer vite@"^8.0.0" from @vitejs/plugin-react@6.0.1
-npm error   node_modules/@vitejs/plugin-react
-npm error     dev @vitejs/plugin-react@"^6.0.0" from the root project
-npm error
-npm error Could not resolve dependency:
-npm error peer vite@"^5.2.0 || ^6 || ^7" from @tailwindcss/vite@4.2.1
-npm error node_modules/@tailwindcss/vite
-npm error   @tailwindcss/vite@"^4.2.1" from the root project
-npm error
-npm error Conflicting peer dependency: vite@7.3.1
-npm error node_modules/vite
-npm error   peer vite@"^5.2.0 || ^6 || ^7" from @tailwindcss/vite@4.2.1
-npm error   node_modules/@tailwindcss/vite
-npm error     @tailwindcss/vite@"^4.2.1" from the root project
-npm error
-npm error Fix the upstream dependency conflict, or retry
-npm error this command with --force or --legacy-peer-deps
-npm error to accept an incorrect (and potentially broken) dependency resolution.
-npm error
-npm error
-npm error For a full report see:
-npm error C:\Users\blackbox\AppData\Local\npm-cache\_logs\2026-03-14T21_19_28_317Z-eresolve-report.txt
-npm error A complete log of this run can be found in: C:\Users\blackbox\AppData\Local\npm-cache\_logs\2026-03-14T21_19_28_317Z-debug-0.log
+ChartArea.tsx:157 Uncaught TypeError: timeScale.scrollToIndex is not a function
+    at ChartArea.tsx:157:21
+    at basicStateReducer (react-dom_client.js?v=e5fc1a1b:5854:47)
+    at updateReducerImpl (react-dom_client.js?v=e5fc1a1b:5943:54)
+    at updateReducer (react-dom_client.js?v=e5fc1a1b:5887:16)
+    at Object.useState (react-dom_client.js?v=e5fc1a1b:18996:20)
+    at exports.useState (chunk-OTTQSYDI.js?v=e5fc1a1b:959:36)
+    at TradingChart (TradingChart.tsx:57:51)
+    at Object.react_stack_bottom_frame (react-dom_client.js?v=e5fc1a1b:18509:20)
+    at renderWithHooks (react-dom_client.js?v=e5fc1a1b:5654:24)
+    at updateFunctionComponent (react-dom_client.js?v=e5fc1a1b:7475:21)
+(anonymous) @ ChartArea.tsx:157
+basicStateReducer @ react-dom_client.js?v=e5fc1a1b:5854
+updateReducerImpl @ react-dom_client.js?v=e5fc1a1b:5943
+updateReducer @ react-dom_client.js?v=e5fc1a1b:5887
+useState @ react-dom_client.js?v=e5fc1a1b:18996
+exports.useState @ chunk-OTTQSYDI.js?v=e5fc1a1b:959
+TradingChart @ TradingChart.tsx:57
+react_stack_bottom_frame @ react-dom_client.js?v=e5fc1a1b:18509
+renderWithHooks @ react-dom_client.js?v=e5fc1a1b:5654
+updateFunctionComponent @ react-dom_client.js?v=e5fc1a1b:7475
+beginWork @ react-dom_client.js?v=e5fc1a1b:8525
+runWithFiberInDEV @ react-dom_client.js?v=e5fc1a1b:997
+performUnitOfWork @ react-dom_client.js?v=e5fc1a1b:12561
+workLoopSync @ react-dom_client.js?v=e5fc1a1b:12424
+renderRootSync @ react-dom_client.js?v=e5fc1a1b:12408
+performWorkOnRoot @ react-dom_client.js?v=e5fc1a1b:11827
+performWorkOnRootViaSchedulerTask @ react-dom_client.js?v=e5fc1a1b:13505
+performWorkUntilDeadline @ react-dom_client.js?v=e5fc1a1b:36
+<TradingChart>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=e5fc1a1b:247
+App @ App.tsx:6
+react_stack_bottom_frame @ react-dom_client.js?v=e5fc1a1b:18509
+renderWithHooksAgain @ react-dom_client.js?v=e5fc1a1b:5729
+renderWithHooks @ react-dom_client.js?v=e5fc1a1b:5665
+updateFunctionComponent @ react-dom_client.js?v=e5fc1a1b:7475
+beginWork @ react-dom_client.js?v=e5fc1a1b:8525
+runWithFiberInDEV @ react-dom_client.js?v=e5fc1a1b:997
+performUnitOfWork @ react-dom_client.js?v=e5fc1a1b:12561
+workLoopSync @ react-dom_client.js?v=e5fc1a1b:12424
+renderRootSync @ react-dom_client.js?v=e5fc1a1b:12408
+performWorkOnRoot @ react-dom_client.js?v=e5fc1a1b:11766
+performWorkOnRootViaSchedulerTask @ react-dom_client.js?v=e5fc1a1b:13505
+performWorkUntilDeadline @ react-dom_client.js?v=e5fc1a1b:36
+<App>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=e5fc1a1b:247
+(anonymous) @ main.tsx:8
+App.tsx:6 An error occurred in the <TradingChart> component.
 
-C:\ITT-project>
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundarie

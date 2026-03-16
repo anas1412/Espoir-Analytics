@@ -6,9 +6,11 @@ interface MarketLogsProps {
   alerts: MarketAlert[];
   error: string | null;
   loading: boolean;
+  onAlertClick?: (alert: MarketAlert) => void;
 }
 
-export function MarketLogs({ alerts, error, loading }: MarketLogsProps) {
+export function MarketLogs({ alerts, error, loading, onAlertClick }: MarketLogsProps) {
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between px-0.5">
@@ -49,7 +51,8 @@ export function MarketLogs({ alerts, error, loading }: MarketLogsProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 layout
-                className={`group relative overflow-hidden p-4 rounded-md border transition-all cursor-default shadow-sm ${
+                onClick={() => onAlertClick?.(alert)}
+                className={`group relative overflow-hidden p-4 rounded-md border transition-all cursor-pointer hover:scale-[1.01] shadow-sm ${
                   alert.type === 'CONFIRMATION'
                     ? 'bg-emerald-900/20 border-emerald-500/40 hover:border-emerald-500'
                     : alert.type === 'CASCADING'
@@ -78,7 +81,7 @@ export function MarketLogs({ alerts, error, loading }: MarketLogsProps) {
                     </span>
                     <div className="flex items-center mt-1 space-x-1.5">
                       <Clock size={10} className="text-zinc-600" />
-                      <span className="text-[10px] text-zinc-500 font-bold tabular-nums uppercase">{alert.time.split(',')[1]}</span>
+                      <span className="text-[10px] text-zinc-500 font-bold tabular-nums uppercase">{alert.time}</span>
                     </div>
                   </div>
                   <span className="text-white font-mono text-sm font-bold tabular-nums tracking-tight">

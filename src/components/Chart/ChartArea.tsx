@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createChart, CrosshairMode, type ISeriesApi, type SeriesMarker, type Time, CandlestickSeries, createSeriesMarkers, HistogramSeries, LineSeries } from 'lightweight-charts';
 import type { ChartData, MarketAlert, ChartTheme } from '../../types';
 import { isTimeInWindow, timeframeToSeconds } from '../../utils/time';
-import { SESSIONS, isInSession, isNewDay } from '../../utils/sessions';
+import { SESSIONS, isInSession } from '../../utils/sessions';
 
 interface ChartAreaProps {
   data: ChartData;
@@ -20,9 +20,10 @@ interface ChartAreaProps {
   nyColor: string;
   sessionOpacity: number;
   theme: ChartTheme;
+  onRegisterScrollToTime?: (fn: (time: number) => void) => void;
 }
 
-export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor, sessionOpacity, theme }: ChartAreaProps) {
+export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, resetCounter, showSessions, showDayDividers, londonColor, nyColor, sessionOpacity, theme, onRegisterScrollToTime }: ChartAreaProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -37,7 +38,6 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
   const markersPluginRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const confirmationSeriesRef = useRef<any[]>([]);
-  const isFirstLoadRef = useRef(true);
 
   // 1. Initial Chart Setup
   useEffect(() => {
@@ -146,6 +146,28 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     if (!chartRef.current || !data.ohlc || data.ohlc.length === 0) return;
     const ohlc = data.ohlc;
 
+    // Register scrollToTime function with parent
+    if (onRegisterScrollToTime) {
+      onRegisterScrollToTime((time: number) => {
+        if (!chartRef.current) return;
+        const timeScale = chartRef.current.timeScale();
+        const targetIndex = ohlc.findIndex(c => (c.time as number) >= time);
+        if (targetIndex !== -1) {
+          // Calculate visible range to center on targetIndex
+          const visibleInfo = timeScale.getVisibleRange();
+          if (visibleInfo) {
+            const currentFrom = visibleInfo.from;
+            const currentTo = visibleInfo.to;
+            const currentCenter = Math.floor((currentFrom + currentTo) / 2);
+            const offset = targetIndex - currentCenter;
+            const newFrom = currentFrom + offset;
+            const newTo = currentTo + offset;
+            timeScale.setVisibleRange({ from: newFrom, to: newTo });
+          }
+        }
+      });
+    }
+
     seriesRef.current?.setData(ohlc as any);
 
     // Update Sessions Data
@@ -166,32 +188,12 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       series.setData(sessionData);
     });
 
-    // Update Dividers Data
+    // Update Dividers Data (PERMANENTLY HIDDEN)
     if (dividerSeriesRef.current) {
-      if (!showDayDividers) {
         dividerSeriesRef.current.setData([]);
-      } else {
-        const dividerData = ohlc.map((c, i) => ({
-          time: c.time,
-          value: i > 0 && isNewDay(ohlc[i-1].time as number, c.time as number) ? 1 : 0,
-        }));
-        dividerSeriesRef.current.setData(dividerData);
-      }
     }
 
-    // Auto-fit on initial load
-    if (isFirstLoadRef.current) {
-      const timeScale = chartRef.current.timeScale();
-      const lastIndex = ohlc.length - 1;
-
-      chartRef.current.priceScale('right').applyOptions({ autoScale: true });
-
-      timeScale.setVisibleLogicalRange({
-        from: Math.max(0, lastIndex - 150),
-        to: lastIndex + 10,
-      });
-      isFirstLoadRef.current = false;
-    }
+    // Auto-fit is now handled by Effect 5 (Markers & Alerts)
   }, [data.ohlc, showSessions, showDayDividers]);
 
   // 3. Theme Update (High Performance)
@@ -270,6 +272,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
     const markers: SeriesMarker<Time>[] = [];
     const newAlerts: MarketAlert[] = [];
     const signals = data.ith_itl || [];
+    const sweeps = data.sweeps || [];
+    const confData = data.confirmations || [];
     
     signals.forEach((signal) => {
       const isITH = signal.type === 1;
@@ -285,12 +289,38 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
         if (sIdx !== -1) sweepTime = ohlc[sIdx].time as number;
       }
 
-      // Check Expiry
+      // Check Expiry - only if never swept
       const isExpired = !sweepTime && preciseTime < expiryTimestamp;
       if (isExpired) return;
 
-      const endTime = sweepTime || (ohlc[ohlc.length-1].time as number);
-      if (preciseTime === endTime) return; // Skip zero-length rays
+      // FIX: Only draw ray if swept. Otherwise creates vertical line to end of chart
+      if (!sweepTime) {
+        // Still add marker for unswept levels
+        const tfPrefix = signal.timeframe ? `[${signal.timeframe}] ` : '';
+        const termLabel = signal.term === 'Internal' ? 'Int' : 'Ext';
+        markers.push({
+          time: preciseTime as any,
+          position: isITH ? 'aboveBar' : 'belowBar',
+          color: isITH ? '#f43f5e' : '#10b981',
+          shape: 'square',
+          text: `${tfPrefix}${termLabel} ${isITH ? 'ITH' : 'ITL'}`,
+          size: 0,
+        });
+        newAlerts.push({
+          id: `${signal.time}-${signal.timeframe || 'current'}-${isITH ? 'ITH' : 'ITL'}`,
+          time: new Date((signal.time as number) * 1000).toLocaleString('en-GB', { 
+            day: '2-digit', month: '2-digit', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit', second: '2-digit' 
+          }),
+          type: isITH ? 'ITH' : 'ITL',
+          subtype: `${tfPrefix}${signal.term} ${isITH ? 'ITH' : 'ITL'}`,
+          price: signal.level.toFixed(2),
+          timestamp: signal.time as number,
+          timeframe: signal.timeframe,
+        });
+        return;
+      }
+
       const tfPrefix = signal.timeframe ? `[${signal.timeframe}] ` : '';
 
       // Create Ray Series
@@ -307,7 +337,7 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       
       raySeries.setData([
         { time: preciseTime as any, value: signal.level },
-        { time: endTime as any, value: signal.level },
+        { time: sweepTime as any, value: signal.level },
       ]);
       raySeriesRef.current.push(raySeries);
 
@@ -322,19 +352,22 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
         size: 0,
       });
 
-      // Add Alert
+      // Add Alert (simple - no linking)
       newAlerts.push({
         id: `${signal.time}-${signal.timeframe || 'current'}-${isITH ? 'ITH' : 'ITL'}`,
-        time: new Date((signal.time as number) * 1000).toLocaleString(),
+        time: new Date((signal.time as number) * 1000).toLocaleString('en-GB', { 
+          day: '2-digit', month: '2-digit', year: 'numeric', 
+          hour: '2-digit', minute: '2-digit', second: '2-digit' 
+        }),
         type: isITH ? 'ITH' : 'ITL',
         subtype: `${tfPrefix}${signal.term} ${isITH ? 'ITH' : 'ITL'}`,
         price: signal.level.toFixed(2),
-        timestamp: signal.time as number
+        timestamp: signal.time as number,
+        timeframe: signal.timeframe,
       });
     });
 
     // Handle Sweeps markers (subtle yellow dots at capture points)
-    const sweeps = data.sweeps || [];
     sweeps.forEach((sweep) => {
       const preciseTime = pinpointTime(sweep.time, sweep.timeframe, sweep.type);
       if (preciseTime < lookbackTimestamp) return;
@@ -345,19 +378,42 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
       markers.push({
         time: preciseTime as any,
         position: sweep.type === 1 ? 'aboveBar' : 'belowBar',
-        color: '#fbbf24',
+        color: '#ff0000',
         shape: 'circle',
         text: 'SWEEP',
         size: 0.2,
       });
+
+      // Add Sweep Alert (simple - no linking)
+      newAlerts.push({
+        id: `sweep-${sweep.time}-${sweep.timeframe || 'current'}`,
+        time: new Date((sweep.time as number) * 1000).toLocaleString('en-GB', { 
+          day: '2-digit', month: '2-digit', year: 'numeric', 
+          hour: '2-digit', minute: '2-digit', second: '2-digit' 
+        }),
+        type: 'SWEEP',
+        subtype: `${sweep.timeframe || 'current'} SWEEP`,
+        price: sweep.level.toFixed(2),
+        timestamp: sweep.time as number,
+        timeframe: sweep.timeframe,
+      });
     });
 
     // 2. Handle Confirmations (Confirmed, Invalid, Cascading, Violated, Hunting)
-    const confirmations = data.confirmations || [];
-    confirmations.forEach((conf) => {
+    confData.forEach((conf) => {
+      // Filter by scan depth
+      if (conf.sweepTime < lookbackTimestamp) return;
+
+      // Filter by session window
+      const inWindow = isTimeInWindow(conf.sweepTime, sweepStart, sweepEnd);
+      if (filterSweepsByWindow && !inWindow) return;
+
       const isShort = conf.type === 1;
       const isSH = conf.legType === 'StopHunt';
-      const timeStr = new Date(conf.sweepTime * 1000).toLocaleString();
+      const timeStr = new Date(conf.sweepTime * 1000).toLocaleString('en-GB', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+      });
       
       if (conf.status === 'Confirmed' && conf.ifvg) {
         // Draw the iFVG box
@@ -400,7 +456,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           type: 'CONFIRMATION',
           subtype: `${conf.timeframe} ${isSH ? 'SH ' : ''}CONFIRMED`,
           price: conf.sweepPrice.toFixed(2),
-          timestamp: conf.sweepTime
+          timestamp: conf.sweepTime,
+          timeframe: conf.timeframe,
         });
       } else if (conf.status === 'Cascading') {
         newAlerts.push({
@@ -409,7 +466,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           type: 'CASCADING',
           subtype: `${conf.timeframe} Multi FVGs (${conf.ifvgCount})${isSH ? ' SH' : ''}`,
           price: conf.sweepPrice.toFixed(2),
-          timestamp: conf.sweepTime
+          timestamp: conf.sweepTime,
+          timeframe: conf.timeframe,
         });
       } else if (conf.status === 'Violated') {
         newAlerts.push({
@@ -418,7 +476,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           type: 'VIOLATED',
           subtype: `${conf.timeframe} Extreme Violated`,
           price: conf.sweepPrice.toFixed(2),
-          timestamp: conf.sweepTime
+          timestamp: conf.sweepTime,
+          timeframe: conf.timeframe,
         });
       } else if (conf.status === 'Hunting') {
         newAlerts.push({
@@ -427,7 +486,8 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           type: 'STOP_HUNT',
           subtype: `${conf.timeframe} Hunting 2nd Chance`,
           price: conf.sweepPrice.toFixed(2),
-          timestamp: conf.sweepTime
+          timestamp: conf.sweepTime,
+          timeframe: conf.timeframe,
         });
       } else if (conf.status === 'Invalid') {
         const reason = conf.ifvgCount === 0 ? 'No qualifying FVG' : 'Expired';
@@ -437,35 +497,38 @@ export function ChartArea({ data, timeframe, lookbackDays, levelExpiryDays, swee
           type: 'INVALID',
           subtype: `${conf.timeframe} ${reason}${isSH ? ' SH' : ''}`,
           price: conf.sweepPrice.toFixed(2),
-          timestamp: conf.sweepTime
+          timestamp: conf.sweepTime,
+          timeframe: conf.timeframe,
         });
       }
     });
 
     markersPluginRef.current?.setMarkers(markers.sort((a, b) => (a.time as number) - (b.time as number)));
+
+    // Set visible range AFTER all series are added (including ray series)
+    // This must be in Effect 5 because adding ray series triggers auto-fit to oldest data
+    const lastIndex = ohlc.length - 1;
+    chartRef.current.priceScale('right').applyOptions({ autoScale: true });
+    chartRef.current.timeScale().setVisibleLogicalRange({
+      from: Math.max(0, lastIndex - 150),
+      to: lastIndex + 10,
+    });
     
     setTimeout(() => {
       onAlertsUpdate(newAlerts.sort((a, b) => b.timestamp - a.timestamp));
     }, 0);
-  }, [data.ith_itl, data.sweeps, data.confirmations, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, timeframe]);
+  }, [data.ith_itl, data.sweeps, data.confirmations, lookbackDays, levelExpiryDays, sweepStart, sweepEnd, filterSweepsByWindow, onAlertsUpdate, timeframe, resetCounter]);
 
-  // 6. Handle Reset View
+  // 6. Reset View Handler - separate effect for reliability
   useEffect(() => {
-    if (chartRef.current && data.ohlc.length > 0) {
-      const timeScale = chartRef.current.timeScale();
-      const lastIndex = data.ohlc.length - 1;
-
-      // 1. Force Price back to Auto
-      chartRef.current.priceScale('right').applyOptions({ autoScale: true });
-
-      // 2. Snap Time to the last 150 candles
-      timeScale.setVisibleLogicalRange({
-        from: Math.max(0, lastIndex - 150),
-        to: lastIndex + 10,
-      });
-    }
-  }, [resetCounter]);
-
+    if (!chartRef.current || !data.ohlc || data.ohlc.length === 0) return;
+    const lastIndex = data.ohlc.length - 1;
+    chartRef.current.priceScale('right').applyOptions({ autoScale: true });
+    chartRef.current.timeScale().setVisibleLogicalRange({
+      from: Math.max(0, lastIndex - 150),
+      to: lastIndex + 10,
+    });
+  }, [resetCounter, data.ohlc.length]);
 
   return <div ref={chartContainerRef} className="absolute inset-0" />;
 }

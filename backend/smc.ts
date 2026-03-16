@@ -1,3 +1,5 @@
+const now = () => new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
 export interface Candle {
   time: number | string;
   open: number;
@@ -38,6 +40,8 @@ export interface Sweep {
   type: 1 | -1; // 1 for Sweep of ITH (Bullish Sweep), -1 for Sweep of ITL (Bearish Sweep)
   level: number;
   sourceIndex: number; // The index of the ITH/ITL that was swept
+  sourceTime: number; // The timestamp of the ITH/ITL that was swept
+  originalSourceTime?: number; // For Stop Hunts: the start of the primary drive
   timeframe?: string;
 }
 
@@ -49,6 +53,12 @@ export interface IFVG {
   bottom: number;
   inversionTime: number;
   inversionIndex: number;
+}
+
+export interface CascadeStep {
+  timeframe: string;
+  status: 'Confirmed' | 'Invalid' | 'Cascading' | 'Violated' | 'Hunting';
+  ifvgCount: number;
 }
 
 export interface Confirmation {
@@ -63,8 +73,10 @@ export interface Confirmation {
   ifvg?: IFVG;
   legStartIndex: number;
   legEndIndex: number;
+  legStartTime: number;
   extremePrice: number;
   violationIndex?: number;
+  cascadeSteps?: CascadeStep[];
 }
 
 export function calculateFVG(ohlc: Candle[], minFvgRatio: number = 0): FVG[] {
@@ -187,8 +199,8 @@ export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], t
     }
   }
 
-  console.log(`[SMC] Processing ${ohlc.length} candles for ${timeframe} (${term})`);
-  console.log(`[SMC] Found ${swings.length} swings and ${fvgs.length} FVGs`);
+  console.log(`${now()} [SMC] Processing ${ohlc.length} candles for ${timeframe} (${term})`);
+  console.log(`${now()} [SMC] Found ${swings.length} swings and ${fvgs.length} FVGs`);
 
   let rejectedMitigated = 0;
   let rejectedRange = 0;
@@ -239,8 +251,8 @@ export function calculateITH_ITL(ohlc: Candle[], swings: Swing[], fvgs: FVG[], t
     }
   }
 
-  console.log(`[SMC] Detected ${ith_itl.length} ITH/ITL signals`);
-  console.log(`[SMC] Rejected: ${rejectedMitigated} (Mitigated too early), ${rejectedRange} (Out of price range)`);
+  console.log(`${now()} [SMC] Detected ${ith_itl.length} ITH/ITL signals`);
+  console.log(`${now()} [SMC] Rejected: ${rejectedMitigated} (Mitigated too early), ${rejectedRange} (Out of price range)`);
 
   return ith_itl;
 }
@@ -279,6 +291,7 @@ export function calculateSweeps(ohlc: Candle[], ith_itl: ITH_ITL[]): Sweep[] {
           type: signal.type,
           level: signal.level,
           sourceIndex: signal.index,
+          sourceTime: signal.time,
           timeframe: signal.timeframe
         });
         // We only take the first sweep for each ITH/ITL as the "signal trigger"
@@ -287,7 +300,7 @@ export function calculateSweeps(ohlc: Candle[], ith_itl: ITH_ITL[]): Sweep[] {
     }
   }
 
-  console.log(`[SMC] Detected ${sweeps.length} Sweeps of ITH/ITL`);
+  console.log(`${now()} [SMC] Detected ${sweeps.length} Sweeps of ITH/ITL`);
   return sweeps;
 }
 
@@ -337,38 +350,130 @@ export function calculateConfirmations(
   const confirmations: Confirmation[] = [];
 
   for (const sweep of sweeps) {
-    // 1. Identify Manipulation Leg
-    let legStartIndex = sweep.sourceIndex;
-    const isITH = sweep.type === 1;
+    // 1. Fuzzy Mapping: Map timestamps to the current ohlc array
+    // Find the candle that contains the timestamp (current or next nearest)
+    const findFuzzyIndex = (t: number) => {
+      // Find the candle where candle.time starts the window (e.g., 10:00:00 for a 3m candle)
+      // We look for the candle starting at or before t, that ends at or after t
+      const tfMatch = timeframe.match(/^(\d+)([mhd])$/);
+      let tfSeconds = 60; // default 1m
+      if (tfMatch) {
+        const val = parseInt(tfMatch[1]);
+        const unit = tfMatch[2];
+        if (unit === 'm') tfSeconds = val * 60;
+        else if (unit === 'h') tfSeconds = val * 3600;
+        else if (unit === 'd') tfSeconds = val * 86400;
+      }
 
-    // Recalculate based on current timeframe swings
-    for (let i = swings.length - 1; i >= 0; i--) {
-      const s = swings[i];
-      if (s.index < sweep.index && s.index > sweep.sourceIndex) {
-        if (isITH && s.type === -1) { // Sweep High -> looking for Swing Low
-          legStartIndex = s.index;
+      return ohlc.findIndex(c => {
+        const ct = typeof c.time === 'string' ? parseInt(c.time) : c.time;
+        return ct <= t && t < ct + tfSeconds;
+      });
+    };
+
+    // 2. Find by timestamp first
+    let currentSweepIndex = findFuzzyIndex(sweep.time);
+    
+    // If timestamp not found, try to find by PRICE LEVEL (sweep point)
+    if (currentSweepIndex === -1) {
+      const isITH = sweep.type === 1;
+      for (let i = 0; i < ohlc.length; i++) {
+        const swept = isITH ? (ohlc[i].high > sweep.level) : (ohlc[i].low < sweep.level);
+        if (swept) {
+          currentSweepIndex = i;
           break;
-        } else if (!isITH && s.type === 1) { // Sweep Low -> looking for Swing High
-          legStartIndex = s.index;
+        }
+      }
+    }
+    // Use originalSourceTime for Stop Hunts to define the "Inclusive Leg"
+    const sourceTimeToUse = (isStopHuntPass && sweep.originalSourceTime) ? sweep.originalSourceTime : sweep.sourceTime;
+    let currentSourceIndex = findFuzzyIndex(sourceTimeToUse);
+    
+    // If source timestamp not found, find by ITH/ITL level
+    if (currentSourceIndex === -1) {
+      for (let i = 0; i < ohlc.length; i++) {
+        if (ohlc[i].high >= sweep.level || ohlc[i].low <= sweep.level) {
+          currentSourceIndex = i;
           break;
         }
       }
     }
 
-    // 2. Identify Leg Extreme
-    let extremePrice = isITH ? -Infinity : Infinity;
-    for (let i = legStartIndex; i <= sweep.index; i++) {
-      if (isITH) {
-        if (ohlc[i].high > extremePrice) extremePrice = ohlc[i].high;
-      } else {
-        if (ohlc[i].low < extremePrice) extremePrice = ohlc[i].low;
+    if (currentSweepIndex === -1 || currentSourceIndex === -1) continue;
+
+    let legStartIndex = currentSourceIndex;
+    const isITH = sweep.type === 1;
+
+    // Recalculate structural pivot within the inclusive window
+    let foundSwing = false;
+    for (let i = swings.length - 1; i >= 0; i--) {
+      const s = swings[i];
+      if (s.index < currentSweepIndex && s.index > currentSourceIndex) {
+        if (isITH && s.type === -1) { 
+          legStartIndex = s.index;
+          foundSwing = true;
+          break;
+        } else if (!isITH && s.type === 1) { 
+          legStartIndex = s.index;
+          foundSwing = true;
+          break;
+        }
       }
     }
 
-    // 3. Count ALL FVGs in the leg
+    // REQUIRE confirmed swing for Stop Hunts
+    if (isStopHuntPass && !foundSwing) {
+      continue; 
+    }
+
+    // 2. Identify TRUE Leg End - find where the drive ends (reversal point)
+    // Look for a swing in the SAME direction as the sweep AFTER the sweep
+    // This indicates where the drive actually stopped
+    let legEndIndex = currentSweepIndex;
+    let extremePrice = isITH ? -Infinity : Infinity;
+    
+    // First, find the first swing in the opposite direction (reversal signal)
+    let reversalIndex = ohlc.length; // default to end of data
+    for (let i = 0; i < swings.length; i++) {
+      const s = swings[i];
+      // For ITH sweep (up), look for Swing Low (reversal down)
+      // For ITL sweep (down), look for Swing High (reversal up)
+      if (s.index > currentSweepIndex) {
+        if (isITH && s.type === -1) {
+          reversalIndex = s.index;
+          break;
+        } else if (!isITH && s.type === 1) {
+          reversalIndex = s.index;
+          break;
+        }
+      }
+    }
+
+    // Leg goes from swing extreme to the TRUE extreme (before reversal)
+    // The TRUE extreme is the highest high (for ITH) or lowest low (for ITL)
+    // in the drive from legStartIndex to the candle BEFORE reversal
+    const trueLegEnd = reversalIndex - 1;
+    for (let i = legStartIndex; i <= trueLegEnd; i++) {
+      if (isITH) {
+        if (ohlc[i].high > extremePrice) {
+          extremePrice = ohlc[i].high;
+          legEndIndex = i;
+        }
+      } else {
+        if (ohlc[i].low < extremePrice) {
+          extremePrice = ohlc[i].low;
+          legEndIndex = i;
+        }
+      }
+    }
+
+    // Also track the original sweep index for violation checking
+    const originalSweepIndex = currentSweepIndex;
+
+    // 3. Count ALL FVGs in the TRUE leg (from swing to extreme)
     const legFVGs = fvgs.filter(fvg => 
       fvg.index >= legStartIndex && 
-      fvg.index <= sweep.index &&
+      fvg.index <= legEndIndex &&
       (isITH ? fvg.direction === 1 : fvg.direction === -1)
     );
 
@@ -382,17 +487,19 @@ export function calculateConfirmations(
       status = 'Cascading';
     } else if (legFVGs.length === 1) {
       const targetFVG = legFVGs[0];
+      // Check if FVG was inverted AFTER the original sweep (first candle to break level)
       const inversion = ifvgs.find(ifvg => 
         ifvg.index === targetFVG.index && 
-        ifvg.inversionIndex >= sweep.index
+        ifvg.inversionIndex >= originalSweepIndex
       );
 
-      // Check for Violation BEFORE inversion
-      for (let i = sweep.index + 1; i < ohlc.length; i++) {
+      // Check for Violation starting FROM THE TRUE LEG END (after drive completes)
+      for (let i = legEndIndex; i < ohlc.length; i++) {
         const c = ohlc[i];
         const violated = isITH ? (c.high > extremePrice) : (c.low < extremePrice);
         const inverted = inversion && i >= inversion.inversionIndex;
 
+        // If it violates first (or same candle but we prioritize violation for caution)
         if (violated && (!inverted || i < (inversion?.inversionIndex ?? 0))) {
           status = 'Violated';
           violationIndex = i;
@@ -423,10 +530,12 @@ export function calculateConfirmations(
       ifvgCount: legFVGs.length,
       ifvg: confirmedIFVG,
       legStartIndex,
-      legEndIndex: sweep.index,
+      legEndIndex, // TRUE extreme (highest high / lowest low of the drive)
+      legStartTime: typeof ohlc[legStartIndex].time === 'string' ? parseInt(ohlc[legStartIndex].time as string) : ohlc[legStartIndex].time as number,
       extremePrice,
       violationIndex
     });
+
   }
 
   return confirmations;
